@@ -1,5 +1,6 @@
 import './style.css';
 import { state } from './state';
+import { renderSidebar, setupSidebarEvents } from './components/Sidebar';
 import { renderHeader, setupHeaderEvents } from './components/Header';
 import { renderGuardrailBanner, setupGuardrailEvents } from './components/GuardrailBanner';
 import { renderDashboardView, setupDashboardEvents } from './components/DashboardView';
@@ -10,6 +11,8 @@ import { renderClustersView, setupClustersEvents } from './components/ClustersVi
 import { renderReunificationView, setupReunificationEvents } from './components/ReunificationView';
 import { renderMapView, setupMapEvents } from './components/MapView';
 import { renderAntiFraudView } from './components/AntiFraudView';
+import { renderSightingsView, setupSightingsEvents } from './components/SightingsView';
+import { renderAuditLogView } from './components/AuditLogView';
 import { renderCaseDetailModal, setupCaseModal } from './components/CaseDetailModal';
 import { renderSightingReportModal, setupSightingModal } from './components/SightingReportModal';
 import { renderNewCaseModal, setupNewCaseModal } from './components/NewCaseModal';
@@ -48,48 +51,62 @@ async function renderApp(): Promise<void> {
     case 'antifraud':
       tabContentHtml = await renderAntiFraudView();
       break;
+    case 'sightings':
+      tabContentHtml = await renderSightingsView();
+      break;
+    case 'audit':
+      tabContentHtml = await renderAuditLogView();
+      break;
     default:
       tabContentHtml = await renderDashboardView();
   }
 
   appEl.innerHTML = `
-    <!-- Top Header -->
-    ${renderHeader()}
+    <!-- Left Navigation Sidebar -->
+    ${renderSidebar()}
 
-    <!-- AI Guardrail Banner -->
-    ${renderGuardrailBanner()}
+    <!-- Main Workspace Container (Vertical Column Stack) -->
+    <div class="flex-1 flex flex-col min-w-0 min-h-screen bg-[#FAF7F2] overflow-x-hidden">
+      <!-- Top Navigation Header -->
+      ${renderHeader()}
 
-    <!-- Main Content Container -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      ${tabContentHtml}
-    </main>
+      <!-- AI Ethics & CJIS Guardrail Banner -->
+      ${renderGuardrailBanner()}
 
-    <!-- Global Footer -->
-    <footer class="mt-auto border-t border-[#e2d9cc] bg-[#f2ede4]/80 backdrop-blur-md py-6 text-center text-xs text-[#6e5d81]">
-      <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-        <p class="font-medium">© 2026 SafeTrace Protocol — Multimodal Forensic Decision Intelligence &amp; Humanitarian Reunification.</p>
-        <div class="flex items-center space-x-4 text-[#8a7a9e]">
-          <span class="font-semibold text-[#7c5cbf]">CJIS &amp; GDPR Aligned</span>
-          <span>•</span>
-          <span>Zero-Knowledge Consent</span>
-          <span>•</span>
-          <span>Human-in-the-Loop</span>
+      <!-- Main Dynamic Content Workspace -->
+      <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        ${tabContentHtml}
+      </main>
+
+      <!-- Global Enterprise Footer -->
+      <footer class="mt-auto border-t border-[#E8DFD3] bg-[#F4EFE6]/90 backdrop-blur-md py-5 text-center text-xs text-[#6E6277]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <p class="font-medium text-[#2C2230]">© 2026 SafeTrace Protocol — Multimodal Forensic Decision Intelligence &amp; Humanitarian Reunification.</p>
+          <div class="flex items-center space-x-3 text-[#7C5CBF] font-semibold text-[11px]">
+            <span>CJIS &amp; GDPR Aligned</span>
+            <span class="text-[#D0C2E2]">•</span>
+            <span>Zero-Knowledge Consent</span>
+            <span class="text-[#D0C2E2]">•</span>
+            <span>Human-in-the-Loop</span>
+          </div>
         </div>
-      </div>
-    </footer>
+      </footer>
+    </div>
 
-    <!-- Toast Notifications -->
+    <!-- Toast Notifications Mount -->
     ${renderToastContainer()}
 
-    <!-- Modal Injection Mount -->
+    <!-- Modal Mount Container -->
     <div id="modal-root"></div>
   `;
 
-  // Attach event handlers
+  // Attach global UI event handlers
+  setupSidebarEvents();
   setupHeaderEvents();
   setupGuardrailEvents();
   setupToastEvents();
 
+  // Attach tab-specific event handlers
   switch (activeTab) {
     case 'dashboard':
       setupDashboardEvents();
@@ -111,6 +128,9 @@ async function renderApp(): Promise<void> {
       break;
     case 'map':
       await setupMapEvents();
+      break;
+    case 'sightings':
+      setupSightingsEvents();
       break;
   }
 }

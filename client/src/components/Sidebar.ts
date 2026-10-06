@@ -48,19 +48,19 @@ export function renderSidebar(): string {
 
   return `
     <!-- Mobile Backdrop Overlay -->
-    <div id="sidebar-backdrop" class="fixed inset-0 bg-black/40 z-40 lg:hidden ${mobileOpen ? 'block' : 'hidden'}"></div>
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-40 lg:hidden ${mobileOpen ? 'block' : 'hidden'}"></div>
 
     <!-- Sidebar Container -->
-    <aside id="app-sidebar" class="fixed lg:static top-0 bottom-0 left-0 z-50 w-60 bg-[#4E342E] text-[#EDE7E4] flex flex-col justify-between border-r border-[#3E2723] transition-transform duration-200 ease-in-out ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}">
+    <aside id="app-sidebar" class="fixed lg:static top-0 bottom-0 left-0 z-50 w-64 bg-[#21182B] text-[#EDE4F5] flex flex-col justify-between border-r border-[#322641] transition-transform duration-200 ease-in-out shrink-0 ${mobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'}">
       <!-- Top Brand Header -->
-      <div class="p-5 border-b border-[#3E2723]/80">
+      <div class="p-5 border-b border-[#322641] bg-[#1B1323]">
         <div class="flex items-center space-x-3">
-          <div class="w-9 h-9 rounded-md bg-[#FAF8F6] text-[#4E342E] flex items-center justify-center shadow-sm">
-            ${icon('shield', 'w-5 h-5')}
+          <div class="w-9 h-9 rounded-lg bg-[#7C5CBF] text-white flex items-center justify-center shadow-md shadow-[#7C5CBF]/30">
+            ${icon('shield', 'w-5 h-5 text-white')}
           </div>
           <div>
-            <h1 class="text-base font-bold text-[#FAF8F6] tracking-tight leading-none">SafeTrace</h1>
-            <p class="text-[11px] text-[#D7CCC8]/70 mt-1 font-normal leading-tight">Privacy-Aware Investigation</p>
+            <h1 class="text-base font-bold text-[#FAF7F2] tracking-tight leading-none">SafeTrace</h1>
+            <p class="text-[11px] text-[#CBB4E7]/70 mt-1 font-normal leading-tight">Privacy-Aware AI Intelligence</p>
           </div>
         </div>
       </div>
@@ -71,7 +71,7 @@ export function renderSidebar(): string {
           .map(
             (section) => `
           <div>
-            <p class="px-3 text-[10px] font-semibold uppercase tracking-wider text-[#D7CCC8]/60 mb-2">${section.title}</p>
+            <p class="px-3 text-[10px] font-bold uppercase tracking-wider text-[#9E88BA] mb-2">${section.title}</p>
             <div class="space-y-1">
               ${section.items
                 .map((item) => {
@@ -79,19 +79,19 @@ export function renderSidebar(): string {
                   return `
                   <button
                     data-tab="${item.id}"
-                    class="nav-tab-btn w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-all ${
+                    class="nav-tab-btn w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                       isActive
-                        ? 'bg-[#D7CCC8] text-[#4E342E] font-semibold shadow-sm'
-                        : 'text-[#EDE7E4]/80 hover:text-white hover:bg-[#3E2723]'
+                        ? 'bg-[#FAF6F0] text-[#492864] font-bold shadow-sm'
+                        : 'text-[#EDE4F5]/80 hover:text-white hover:bg-[#2F213F]'
                     }"
                   >
                     <div class="flex items-center space-x-2.5">
-                      ${icon(item.iconName, `w-4 h-4 ${isActive ? 'text-[#4E342E]' : 'text-[#D7CCC8]/70'}`)}
+                      ${icon(item.iconName, `w-4 h-4 ${isActive ? 'text-[#7C5CBF]' : 'text-[#CBB4E7]/70'}`)}
                       <span>${item.label}</span>
                     </div>
                     ${
                       item.badge
-                        ? `<span class="px-1.5 py-0.5 text-[9px] font-semibold rounded bg-[#3E2723] text-[#D7CCC8]">${item.badge}</span>`
+                        ? `<span class="px-1.5 py-0.5 text-[9px] font-semibold rounded bg-[#3B2852] text-[#D8C4F0] border border-[#523A70]">${item.badge}</span>`
                         : ''
                     }
                   </button>
@@ -106,28 +106,28 @@ export function renderSidebar(): string {
       </nav>
 
       <!-- Bottom Profile & Status Box -->
-      <div class="p-3 border-t border-[#3E2723]/80 bg-[#3E2723]/40 space-y-3">
+      <div class="p-3 border-t border-[#322641] bg-[#1B1323] space-y-3">
         <!-- Status Indicator -->
-        <div class="flex items-center justify-between px-2 text-[11px] text-[#D7CCC8]/80">
+        <div class="flex items-center justify-between px-2 text-[11px] text-[#CBB4E7]/80">
           <div class="flex items-center space-x-1.5">
-            <span class="w-2 h-2 rounded-full bg-[#3F6B4A] animate-pulse"></span>
-            <span>System Operational</span>
+            <span class="w-2 h-2 rounded-full bg-[#48BB78] animate-pulse"></span>
+            <span class="font-medium text-[#FAF7F2]">Platform Online</span>
           </div>
-          <span class="text-[10px] px-1.5 py-0.5 rounded bg-[#2B1D19] text-[#D7CCC8]">v1.0</span>
+          <span class="text-[10px] px-2 py-0.5 rounded-full bg-[#2C1F3A] text-[#CBB4E7] border border-[#3E2C51] font-mono">v1.0</span>
         </div>
 
         <!-- User Profile Card -->
-        <div class="p-2.5 rounded-md bg-[#2B1D19]/60 border border-[#4E342E] flex items-center justify-between">
+        <div class="p-2.5 rounded-lg bg-[#271C33] border border-[#3E2C51] flex items-center justify-between shadow-xs">
           <div class="flex items-center space-x-2.5 overflow-hidden">
-            <div class="w-7 h-7 rounded bg-[#D7CCC8] text-[#4E342E] flex items-center justify-center font-bold text-xs shrink-0">
+            <div class="w-7 h-7 rounded-md bg-[#7C5CBF] text-[#FAF7F2] flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
               ${(user?.name || 'M').charAt(0)}
             </div>
             <div class="truncate">
-              <p class="text-xs font-semibold text-[#FAF8F6] truncate">${user?.name || 'Detective Maria Chen'}</p>
-              <p class="text-[10px] text-[#D7CCC8]/70 capitalize truncate">${user?.role || 'investigator'}</p>
+              <p class="text-xs font-semibold text-[#FAF7F2] truncate">${user?.name || 'Detective Maria Chen'}</p>
+              <p class="text-[10px] text-[#CBB4E7]/70 capitalize truncate">${user?.role || 'investigator'}</p>
             </div>
           </div>
-          <button id="btn-logout" title="Sign Out" class="p-1.5 rounded hover:bg-[#4E342E] text-[#D7CCC8]/70 hover:text-white transition">
+          <button id="btn-logout" title="Sign Out" class="p-1.5 rounded-md hover:bg-[#3E2C51] text-[#CBB4E7] hover:text-white transition cursor-pointer">
             ${icon('logOut', 'w-3.5 h-3.5')}
           </button>
         </div>
