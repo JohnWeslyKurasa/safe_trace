@@ -1,36 +1,37 @@
 import { state } from '../state';
+import { icon } from '../icons';
 
 export function renderToastContainer(): string {
   const toasts = state.getToasts();
 
   return `
-    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none max-w-sm w-full px-4">
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col space-y-2.5 pointer-events-none max-w-sm w-full px-4">
       ${toasts.map(toast => {
         const borderColors = {
-          success: 'border-emerald-500/50 bg-slate-900/95 text-emerald-300',
-          warning: 'border-amber-500/50 bg-slate-900/95 text-amber-300',
-          error: 'border-rose-500/50 bg-slate-900/95 text-rose-300',
-          ai: 'border-purple-500/60 bg-purple-950/90 text-purple-200 shadow-purple-900/40',
-          info: 'border-indigo-500/50 bg-slate-900/95 text-indigo-300',
-        }[toast.type] || 'border-slate-700 bg-slate-900 text-slate-200';
+          success: 'border-[#7ea88f]/40 bg-[#1e2721]/95 text-[#a8d3b8]',
+          warning: 'border-[#d4a362]/40 bg-[#292218]/95 text-[#eed1a4]',
+          error: 'border-[#d97a85]/40 bg-[#2b181b]/95 text-[#f5b3bb]',
+          ai: 'border-[#bd97e1]/50 bg-[#251a36]/95 text-[#e7d8f5] shadow-[#8c55bd]/20',
+          info: 'border-[#ceb79a]/40 bg-[#241c2c]/95 text-[#e8ded1]',
+        }[toast.type] || 'border-[#dfd0ba]/20 bg-[#1e172c] text-[#f7f3ec]';
 
-        const icons = {
-          success: '✓',
-          warning: '⚠️',
-          error: '✕',
-          ai: '⚡',
-          info: 'ℹ️',
-        }[toast.type] || '•';
+        const iconSvg = {
+          success: icon('check', 'w-4 h-4 text-[#7ea88f]'),
+          warning: icon('alertTriangle', 'w-4 h-4 text-[#d4a362]'),
+          error: icon('x', 'w-4 h-4 text-[#d97a85]'),
+          ai: icon('sparkles', 'w-4 h-4 text-[#bd97e1]'),
+          info: icon('info', 'w-4 h-4 text-[#ceb79a]'),
+        }[toast.type] || icon('bell', 'w-4 h-4 text-[#ceb79a]');
 
         return `
           <div class="pointer-events-auto p-3.5 rounded-xl border ${borderColors} shadow-xl backdrop-blur-md flex items-start space-x-3 text-xs animate-in slide-in-from-bottom-2 fade-in duration-200">
-            <span class="text-sm font-bold shrink-0 mt-0.5">${icons}</span>
+            <span class="shrink-0 mt-0.5">${iconSvg}</span>
             <div class="flex-1 min-w-0">
-              <h4 class="font-bold text-white">${toast.title}</h4>
-              <p class="text-slate-300 mt-0.5 text-[11px] leading-relaxed">${toast.message}</p>
+              <h4 class="font-bold text-[#f7f3ec]">${toast.title}</h4>
+              <p class="text-[#dfd0ba]/90 mt-0.5 text-[11px] leading-relaxed">${toast.message}</p>
             </div>
-            <button data-toast-id="${toast.id}" class="btn-dismiss-toast text-slate-400 hover:text-white text-sm shrink-0 cursor-pointer">
-              ✕
+            <button data-toast-id="${toast.id}" class="btn-dismiss-toast text-[#ceb79a]/60 hover:text-[#f7f3ec] text-sm shrink-0 cursor-pointer">
+              ${icon('x', 'w-3.5 h-3.5')}
             </button>
           </div>
         `;

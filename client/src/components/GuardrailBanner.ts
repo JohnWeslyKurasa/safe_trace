@@ -1,16 +1,21 @@
+import { icon } from '../icons';
+
 export function renderGuardrailBanner(): string {
   return `
-    <div class="bg-gradient-to-r from-indigo-950/80 via-slate-900/90 to-purple-950/80 border-b border-indigo-500/20 px-4 py-2">
-      <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
-        <div class="flex items-center space-x-2 text-indigo-200">
-          <span class="flex h-2 w-2 rounded-full bg-indigo-400"></span>
-          <span class="font-semibold text-white tracking-wide uppercase text-[10px] bg-indigo-500/20 px-1.5 py-0.5 rounded border border-indigo-400/30">AI Safety Guardrails Active</span>
-          <span class="hidden md:inline text-slate-300">|</span>
-          <span class="text-slate-300">Human-in-the-Loop Verification Required: AI produces probabilistic leads only and never confirms identities or closes cases autonomously.</span>
+    <div class="bg-[#f4ecfb] border-b border-[#dfcceb] px-4 py-2 text-xs">
+      <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+        <div class="flex items-center space-x-2 text-[#492864]">
+          <span class="flex h-2 w-2 rounded-full bg-[#8c55bd]"></span>
+          <span class="font-bold tracking-wide uppercase text-[10px] bg-white text-[#733f9f] px-2 py-0.5 rounded-full border border-[#dfcceb] shadow-xs">
+            AI Ethics Guardrails Active
+          </span>
+          <span class="hidden md:inline text-[#c5a4db]">|</span>
+          <span class="text-[#594c6d] text-[11px] font-medium">Human verification mandatory: AI produces probabilistic leads only and never confirms identities autonomously.</span>
         </div>
         <div class="flex items-center space-x-3 text-[11px]">
-          <button id="btn-view-guardrails" class="text-indigo-400 hover:text-indigo-300 underline font-medium cursor-pointer">
-            View Ethical Constraints & Consent Policy
+          <button id="btn-view-guardrails" class="text-[#733f9f] hover:text-[#492864] font-semibold underline cursor-pointer flex items-center space-x-1">
+            <span>${icon('info', 'w-3 h-3 text-[#8c55bd]')}</span>
+            <span>Ethical Governance Policy</span>
           </button>
         </div>
       </div>

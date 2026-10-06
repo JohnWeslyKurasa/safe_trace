@@ -24,17 +24,23 @@ app.use(cors({
   credentials: true
 }));
 
-// Rate limiting
+// Rate limiting (generous in development/demo, robust in production)
+const isDev = process.env.NODE_ENV !== 'production';
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 200,
+  max: isDev ? 10000 : 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
   message: { error: 'Too many requests, please try again later' }
 });
 app.use('/api/', limiter);
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  max: isDev ? 1000 : 50,
+  standardHeaders: true,
+  legacyHeaders: false,
   message: { error: 'Too many authentication attempts, please try again later' }
 });
 app.use('/api/auth/', authLimiter);

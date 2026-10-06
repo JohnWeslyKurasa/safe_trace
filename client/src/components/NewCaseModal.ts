@@ -1,24 +1,25 @@
 import { state } from '../state';
 import { api } from '../api';
+import { icon } from '../icons';
 
 export function renderNewCaseModal(): string {
   return `
-    <div id="newcase-modal-backdrop" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-      <div class="glass-panel-elevated w-full max-w-2xl rounded-2xl border border-slate-700/80 overflow-hidden shadow-2xl max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
+    <div id="newcase-modal-backdrop" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+      <div class="glass-panel-elevated w-full max-w-2xl rounded-3xl border border-[#dfcceb] overflow-hidden shadow-2xl max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
         <!-- Header -->
-        <div class="p-5 border-b border-slate-800 bg-slate-900/90 flex items-center justify-between">
-          <div class="flex items-center space-x-2.5">
-            <div class="w-9 h-9 rounded-xl bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center text-indigo-300 font-bold text-lg">
-              ➕
+        <div class="p-5 border-b border-[#dfcceb] bg-[#faf6fd] flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-2xl bg-[#f4ecfb] border border-[#dfcceb] flex items-center justify-center text-[#8c55bd]">
+              ${icon('plus', 'w-5 h-5 text-[#8c55bd]')}
             </div>
             <div>
-              <h2 class="text-base font-bold text-white">Register Missing Person Case</h2>
-              <p class="text-[11px] text-slate-400">Creates cryptographically signed case dossier with multimodal biometrics</p>
+              <h2 class="text-base font-bold text-[#231c2d]">Register Missing Person Case</h2>
+              <p class="text-[11px] text-[#786a89]">Creates cryptographically signed case dossier with multimodal biometrics</p>
             </div>
           </div>
 
-          <button id="btn-close-newcase-modal" class="text-slate-400 hover:text-white text-xl p-1.5 rounded-lg hover:bg-slate-800 transition cursor-pointer">
-            ✕
+          <button id="btn-close-newcase-modal" class="text-[#786a89] hover:text-[#231c2d] p-2 rounded-xl hover:bg-[#f4ecfb] transition cursor-pointer">
+            ${icon('x', 'w-4 h-4')}
           </button>
         </div>
 
@@ -26,18 +27,18 @@ export function renderNewCaseModal(): string {
         <form id="form-create-case" class="p-6 overflow-y-auto space-y-4 text-xs flex-1">
           <!-- Full Name & Demographics -->
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div class="sm:col-span-2 space-y-1">
-              <label class="font-bold text-slate-300">Full Legal Name *</label>
+            <div class="sm:col-span-2 space-y-1.5">
+              <label class="font-bold text-[#231c2d]">Full Legal Name *</label>
               <input
                 id="input-case-fullname"
                 type="text"
                 required
                 placeholder="e.g. Liam Michael Vance"
-                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                class="w-full bg-[#fbf8f2] border border-[#dfcfb6] rounded-xl px-3.5 py-2 text-xs text-[#231c2d] placeholder-[#88799e] focus:outline-none focus:ring-2 focus:ring-[#8c55bd]"
               />
             </div>
-            <div class="space-y-1">
-              <label class="font-bold text-slate-300">Age *</label>
+            <div class="space-y-1.5">
+              <label class="font-bold text-[#231c2d]">Age *</label>
               <input
                 id="input-case-age"
                 type="number"
@@ -45,15 +46,15 @@ export function renderNewCaseModal(): string {
                 min="1"
                 max="120"
                 placeholder="e.g. 17"
-                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                class="w-full bg-[#fbf8f2] border border-[#dfcfb6] rounded-xl px-3.5 py-2 text-xs text-[#231c2d] placeholder-[#88799e] focus:outline-none focus:ring-2 focus:ring-[#8c55bd]"
               />
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
-            <div class="space-y-1">
-              <label class="font-bold text-slate-300">Gender *</label>
-              <select id="input-case-gender" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+            <div class="space-y-1.5">
+              <label class="font-bold text-[#231c2d]">Gender *</label>
+              <select id="input-case-gender" class="w-full bg-[#fbf8f2] border border-[#dfcfb6] rounded-xl px-3.5 py-2 text-xs text-[#231c2d] focus:outline-none focus:ring-2 focus:ring-[#8c55bd]">
                 <option value="male">Male</option>
                 <option value="female">Female</option>
                 <option value="non-binary">Non-Binary</option>
@@ -61,9 +62,9 @@ export function renderNewCaseModal(): string {
               </select>
             </div>
 
-            <div class="space-y-1">
-              <label class="font-bold text-slate-300">Risk Assessment Level *</label>
-              <select id="input-case-risk" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+            <div class="space-y-1.5">
+              <label class="font-bold text-[#231c2d]">Risk Assessment Level *</label>
+              <select id="input-case-risk" class="w-full bg-[#fbf8f2] border border-[#dfcfb6] rounded-xl px-3.5 py-2 text-xs text-[#231c2d] focus:outline-none focus:ring-2 focus:ring-[#8c55bd]">
                 <option value="critical">Critical Risk (Immediate Danger / Vulnerable)</option>
                 <option value="high" selected>High Risk</option>
                 <option value="medium">Medium Risk</option>
@@ -74,99 +75,99 @@ export function renderNewCaseModal(): string {
 
           <!-- Last Seen Info -->
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div class="space-y-1">
-              <label class="font-bold text-slate-300">Last Seen Date *</label>
+            <div class="space-y-1.5">
+              <label class="font-bold text-[#231c2d]">Last Seen Date *</label>
               <input
                 id="input-case-date"
                 type="date"
                 required
                 value="${new Date().toISOString().split('T')[0]}"
-                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                class="w-full bg-[#fbf8f2] border border-[#dfcfb6] rounded-xl px-3.5 py-2 text-xs text-[#231c2d] focus:outline-none focus:ring-2 focus:ring-[#8c55bd]"
               />
             </div>
-            <div class="space-y-1">
-              <label class="font-bold text-slate-300">City *</label>
+            <div class="space-y-1.5">
+              <label class="font-bold text-[#231c2d]">City *</label>
               <input
                 id="input-case-city"
                 type="text"
                 required
                 placeholder="e.g. Seattle"
-                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                class="w-full bg-[#fbf8f2] border border-[#dfcfb6] rounded-xl px-3.5 py-2 text-xs text-[#231c2d] placeholder-[#88799e] focus:outline-none focus:ring-2 focus:ring-[#8c55bd]"
               />
             </div>
-            <div class="space-y-1">
-              <label class="font-bold text-slate-300">State *</label>
+            <div class="space-y-1.5">
+              <label class="font-bold text-[#231c2d]">State *</label>
               <input
                 id="input-case-state"
                 type="text"
                 required
                 placeholder="e.g. WA"
-                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                class="w-full bg-[#fbf8f2] border border-[#dfcfb6] rounded-xl px-3.5 py-2 text-xs text-[#231c2d] placeholder-[#88799e] focus:outline-none focus:ring-2 focus:ring-[#8c55bd]"
               />
             </div>
           </div>
 
           <!-- Photo URL -->
-          <div class="space-y-1">
-            <label class="font-bold text-slate-300">Primary Reference Photo URL *</label>
+          <div class="space-y-1.5">
+            <label class="font-bold text-[#231c2d]">Primary Reference Photo URL *</label>
             <input
               id="input-case-photo"
               type="text"
               required
               value="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=500"
-              class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              class="w-full bg-[#fbf8f2] border border-[#dfcfb6] rounded-xl px-3.5 py-2 text-xs text-[#231c2d] placeholder-[#88799e] focus:outline-none focus:ring-2 focus:ring-[#8c55bd]"
             />
           </div>
 
           <!-- Physical Features & Distinguishing Marks -->
           <div class="grid grid-cols-3 gap-3">
-            <div class="space-y-1">
-              <label class="font-bold text-slate-300">Height (cm)</label>
-              <input id="input-case-height" type="number" placeholder="175" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none" />
+            <div class="space-y-1.5">
+              <label class="font-bold text-[#231c2d]">Height (cm)</label>
+              <input id="input-case-height" type="number" placeholder="175" class="w-full bg-[#fbf8f2] border border-[#dfcfb6] rounded-xl px-3.5 py-2 text-xs text-[#231c2d] focus:outline-none" />
             </div>
-            <div class="space-y-1">
-              <label class="font-bold text-slate-300">Hair Color</label>
-              <input id="input-case-hair" type="text" placeholder="Brown" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none" />
+            <div class="space-y-1.5">
+              <label class="font-bold text-[#231c2d]">Hair Color</label>
+              <input id="input-case-hair" type="text" placeholder="Brown" class="w-full bg-[#fbf8f2] border border-[#dfcfb6] rounded-xl px-3.5 py-2 text-xs text-[#231c2d] focus:outline-none" />
             </div>
-            <div class="space-y-1">
-              <label class="font-bold text-slate-300">Eye Color</label>
-              <input id="input-case-eyes" type="text" placeholder="Hazel" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none" />
+            <div class="space-y-1.5">
+              <label class="font-bold text-[#231c2d]">Eye Color</label>
+              <input id="input-case-eyes" type="text" placeholder="Hazel" class="w-full bg-[#fbf8f2] border border-[#dfcfb6] rounded-xl px-3.5 py-2 text-xs text-[#231c2d] focus:outline-none" />
             </div>
           </div>
 
           <!-- Distinguishing Marks -->
-          <div class="space-y-1">
-            <label class="font-bold text-slate-300">Distinguishing Features / Tattoos (comma-separated)</label>
-            <input id="input-case-marks" type="text" placeholder="e.g. Small scar above left eyebrow, compass tattoo on right wrist" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none" />
+          <div class="space-y-1.5">
+            <label class="font-bold text-[#231c2d]">Distinguishing Features / Tattoos</label>
+            <input id="input-case-marks" type="text" placeholder="e.g. Small scar above left eyebrow, compass tattoo on right wrist" class="w-full bg-[#fbf8f2] border border-[#dfcfb6] rounded-xl px-3.5 py-2 text-xs text-[#231c2d] focus:outline-none" />
           </div>
 
           <!-- Circumstances Narrative -->
-          <div class="space-y-1">
-            <label class="font-bold text-slate-300">Circumstances Narrative *</label>
-            <textarea id="input-case-circumstances" rows="3" required placeholder="Describe last known location, who they were with, emotional state, vehicle, or transit direction..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-xs text-white placeholder-slate-500 focus:outline-none"></textarea>
+          <div class="space-y-1.5">
+            <label class="font-bold text-[#231c2d]">Circumstances Narrative *</label>
+            <textarea id="input-case-circumstances" rows="3" required placeholder="Describe last known location, who they were with, emotional state, vehicle, or transit direction..." class="w-full bg-[#fbf8f2] border border-[#dfcfb6] rounded-xl p-3 text-xs text-[#231c2d] placeholder-[#88799e] focus:outline-none"></textarea>
           </div>
 
           <!-- Privacy & Consent Options -->
-          <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
-            <span class="font-bold text-slate-200 block uppercase text-[10px] tracking-wider">Privacy &amp; Reunification Safeguards</span>
+          <div class="p-4 rounded-2xl bg-[#fbf8f2] border border-[#dfcfb6] space-y-2">
+            <span class="font-bold text-[#231c2d] block uppercase text-[10px] tracking-wider">Privacy &amp; Reunification Safeguards</span>
             
-            <label class="flex items-center space-x-2 text-slate-300 cursor-pointer">
-              <input type="checkbox" id="input-case-public-sightings" checked class="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-0" />
-              <span>Allow verified public witnesses to submit sighting leads</span>
+            <label class="flex items-center space-x-2 text-[#594c6d] cursor-pointer">
+              <input type="checkbox" id="input-case-public-sightings" checked class="rounded bg-white border-[#dfcfb6] text-[#8c55bd] focus:ring-0" />
+              <span class="font-medium">Allow verified public witnesses to submit sighting leads</span>
             </label>
 
-            <label class="flex items-center space-x-2 text-slate-300 cursor-pointer">
-              <input type="checkbox" id="input-case-req-approval" checked class="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-0" />
-              <span>Require investigator verification before releasing contact information</span>
+            <label class="flex items-center space-x-2 text-[#594c6d] cursor-pointer">
+              <input type="checkbox" id="input-case-req-approval" checked class="rounded bg-white border-[#dfcfb6] text-[#8c55bd] focus:ring-0" />
+              <span class="font-medium">Require investigator verification before releasing contact information</span>
             </label>
           </div>
 
           <!-- Submit Button -->
           <button
             type="submit"
-            class="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 transition cursor-pointer flex items-center justify-center space-x-2"
+            class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#8c55bd] to-[#aa7dc8] hover:from-[#733f9f] hover:to-[#8c55bd] text-white font-bold text-xs shadow-sm shadow-[#8c55bd]/20 transition cursor-pointer flex items-center justify-center space-x-2 active:scale-98"
           >
-            <span>💾</span>
+            <span>${icon('check', 'w-4 h-4 text-white')}</span>
             <span>Sign &amp; Register Case Dossier</span>
           </button>
         </form>

@@ -65,11 +65,11 @@ async function renderApp(): Promise<void> {
     </main>
 
     <!-- Global Footer -->
-    <footer class="mt-auto border-t border-slate-900 bg-slate-950/80 py-6 text-center text-xs text-slate-500">
+    <footer class="mt-auto border-t border-[#e2d9cc] bg-[#f2ede4]/80 backdrop-blur-md py-6 text-center text-xs text-[#6e5d81]">
       <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-        <p>© 2026 SafeTrace Protocol — Multimodal Decision Intelligence for Humanitarian Reunification.</p>
-        <div class="flex items-center space-x-4 text-slate-400">
-          <span>CJIS &amp; GDPR Aligned</span>
+        <p class="font-medium">© 2026 SafeTrace Protocol — Multimodal Forensic Decision Intelligence &amp; Humanitarian Reunification.</p>
+        <div class="flex items-center space-x-4 text-[#8a7a9e]">
+          <span class="font-semibold text-[#7c5cbf]">CJIS &amp; GDPR Aligned</span>
           <span>•</span>
           <span>Zero-Knowledge Consent</span>
           <span>•</span>
