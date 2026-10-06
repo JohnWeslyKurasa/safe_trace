@@ -1,288 +1,214 @@
-import { state } from '../state';
 import { api } from '../api';
-import type { MatchLead } from '../types';
+import { state } from '../state';
 import { icon } from '../icons';
+import type { MatchLead } from '../types';
 
 export async function renderLeadsView(): Promise<string> {
+  let leads: MatchLead[] = [];
+  let errorMsg = '';
+
   try {
-    const { leads } = await api.getLeads();
-
-    return `
-      <div class="space-y-6">
-        <!-- Leads Header -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div class="flex items-center space-x-2 text-xs font-bold text-[#426a54] mb-1">
-              <span class="px-2.5 py-0.5 rounded-full bg-[#edf7f1] border border-[#b8e2c8] tracking-wider text-[10px] uppercase">
-                Decision Intelligence Queue
-              </span>
-              <span class="text-[#c5a4db]">•</span>
-              <span class="text-[#786a89]">Explainable AI • Human Verification Mandatory</span>
-            </div>
-            <h1 class="text-2xl font-bold text-[#231c2d] tracking-tight flex items-center space-x-2">
-              <span>${icon('target', 'w-6 h-6 text-[#8c55bd]')}</span>
-              <span>Lead Prioritization &amp; Verification Hub</span>
-            </h1>
-            <p class="text-xs text-[#786a89] mt-1">
-              Review AI-generated candidate matches with full modality attribution, transparency scores, and bias disclaimers.
-            </p>
-          </div>
-
-          <div class="flex items-center space-x-3">
-            <span class="text-xs text-[#786a89]">Total Leads: <strong class="text-[#231c2d] font-mono font-bold">${leads.length}</strong></span>
-          </div>
-        </div>
-
-        <!-- Filter Toolbar -->
-        <div class="glass-panel p-3.5 rounded-2xl flex flex-wrap items-center justify-between gap-3">
-          <div class="flex items-center space-x-2 text-xs">
-            <span class="text-[#786a89] font-bold uppercase text-[10px] tracking-wider">Filter Status:</span>
-            <button class="btn-lead-filter px-3.5 py-1 rounded-xl bg-[#f4ecfb] text-[#5c3280] border border-[#dfcceb] font-bold cursor-pointer shadow-xs" data-status="">All</button>
-            <button class="btn-lead-filter px-3.5 py-1 rounded-xl bg-white text-[#786a89] hover:text-[#231c2d] border border-[#dfcfb6] font-medium cursor-pointer" data-status="pending">Pending</button>
-            <button class="btn-lead-filter px-3.5 py-1 rounded-xl bg-white text-[#786a89] hover:text-[#231c2d] border border-[#dfcfb6] font-medium cursor-pointer" data-status="under_review">Under Review</button>
-            <button class="btn-lead-filter px-3.5 py-1 rounded-xl bg-white text-[#786a89] hover:text-[#231c2d] border border-[#dfcfb6] font-medium cursor-pointer" data-status="verified">Verified</button>
-          </div>
-
-          <div class="text-xs text-[#786a89] flex items-center space-x-1.5">
-            <span>${icon('shield', 'w-3.5 h-3.5 text-[#5b8a6f]')}</span>
-            <span>Investigator decision locks immutable audit entry</span>
-          </div>
-        </div>
-
-        <!-- Leads List -->
-        <div class="space-y-4" id="leads-list-container">
-          ${leads.map(lead => renderLeadDetailCard(lead)).join('')}
-        </div>
-      </div>
-    `;
+    const res = await api.getLeads();
+    leads = res.leads || [];
   } catch (err: any) {
-    return `<div class="p-8 text-center text-[#b85b67]">Error loading leads: ${err.message}</div>`;
+    console.error('Failed to load match leads:', err);
+    errorMsg = err.message || 'Failed to fetch match leads from server.';
   }
-}
 
-function renderLeadDetailCard(lead: MatchLead): string {
-  const caseObj = typeof lead.caseId === 'object' && lead.caseId ? lead.caseId : null;
-  const scorePercent = Math.round((lead.confidenceScore || 0) * 100);
-  
-  const statusColor = {
-    pending: 'bg-[#fdf5ea] text-[#8f642a] border-[#fae0be]',
-    under_review: 'bg-[#f4ecfb] text-[#5c3280] border-[#dfcceb]',
-    verified: 'bg-[#edf7f1] text-[#385c47] border-[#b8e2c8]',
-    dismissed: 'bg-[#f6f0e4] text-[#88799e] border-[#dfcfb6]',
-    escalated: 'bg-[#fce8ea] text-[#b85b67] border-[#f5b3bb]',
-  }[lead.status] || 'bg-[#f6f0e4] text-[#88799e] border-[#dfcfb6]';
+  const searchQuery = state.getSearchQuery().toLowerCase();
+  if (searchQuery) {
+    leads = leads.filter(
+      (l) =>
+        (l.summary && l.summary.toLowerCase().includes(searchQuery)) ||
+        (l.aiExplanation && l.aiExplanation.toLowerCase().includes(searchQuery)) ||
+        (typeof l.caseId === 'object' && (l.caseId as any)?.caseNumber?.toLowerCase().includes(searchQuery))
+    );
+  }
 
   return `
-    <div class="glass-panel p-5 rounded-2xl space-y-4 hover:border-[#8c55bd]/40 transition shadow-xs">
-      <!-- Top Row: Case info, Match Type, Confidence & Status -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-black/5 pb-3">
-        <div class="flex items-center space-x-3.5">
-          <div class="w-12 h-12 rounded-2xl bg-[#f4ecfb] border border-[#dfcceb] overflow-hidden flex items-center justify-center font-bold text-[#8c55bd] shrink-0">
-            ${caseObj?.photos?.[0]?.url ? `<img src="${caseObj.photos[0].url}" class="w-full h-full object-cover" />` : icon('user', 'w-6 h-6 text-[#aa7dc8]')}
+    <div class="space-y-6">
+      <!-- Page Header -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <div class="flex items-center space-x-2 text-xs font-semibold text-[#6D4C41] uppercase tracking-wider mb-1">
+            <span>Decision Intelligence Queue</span>
+            <span>•</span>
+            <span class="text-[#3F6B4A]">Mandatory Human Oversight</span>
           </div>
-          <div>
-            <div class="flex items-center space-x-2">
-              <h3 class="text-sm font-bold text-[#231c2d]">${caseObj ? caseObj.fullName : 'Associated Case Lead'}</h3>
-              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#f6f0e4] text-[#6f5f48] border border-[#dfcfb6]">${lead.matchType}</span>
-            </div>
-            <p class="text-xs text-[#786a89]">Case #${caseObj?.caseNumber || 'N/A'} • Last seen: ${caseObj?.lastSeenLocation?.city || 'Unknown'}</p>
-          </div>
-        </div>
-
-        <div class="flex items-center space-x-3">
-          <div class="text-right">
-            <span class="text-lg font-extrabold text-[#231c2d] font-mono">${scorePercent}%</span>
-            <span class="block text-[9px] uppercase font-bold text-[#786a89]">Match Probability</span>
-          </div>
-          <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${statusColor}">
-            ${lead.status.replace(/_/g, ' ')}
-          </span>
+          <h1 class="text-xl font-bold text-[#2B211E] tracking-tight">Investigation Leads</h1>
+          <p class="text-xs text-[#6F625D] mt-1">Review, correlate, and verify multimodal AI match hypotheses before taking field action.</p>
         </div>
       </div>
 
-      <!-- Middle: AI Rationale & Modality Bar Graph -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <!-- Rationale & Limitations -->
-        <div class="space-y-3">
-          <div class="p-3.5 rounded-xl bg-[#fbf8f2] border border-[#dfcfb6] text-xs space-y-1">
-            <div class="font-bold text-[#5c3280] flex items-center space-x-1.5">
-              <span>${icon('brain', 'w-3.5 h-3.5 text-[#8c55bd]')}</span>
-              <span>Explainable Lead Rationale</span>
+      ${
+        errorMsg
+          ? `
+        <div class="p-4 rounded-md bg-[#FDF2F2] border border-[#9B3E3E]/30 text-[#9B3E3E] text-xs flex items-center justify-between">
+          <span>${errorMsg}</span>
+          <button onclick="location.reload()" class="underline font-semibold ml-4">Retry</button>
+        </div>
+      `
+          : ''
+      }
+
+      <!-- Leads List Container -->
+      <div class="space-y-4">
+        ${
+          leads.length === 0
+            ? `
+          <div class="card-panel p-12 text-center space-y-3">
+            <div class="w-12 h-12 rounded-full bg-[#EDE7E4] text-[#4E342E] flex items-center justify-center mx-auto">
+              ${icon('target', 'w-6 h-6')}
             </div>
-            <p class="leading-relaxed text-[11px] text-[#594c6d]">${lead.aiExplanation || lead.summary}</p>
+            <h3 class="text-sm font-bold text-[#2B211E]">No investigation leads pending review</h3>
+            <p class="text-xs text-[#6F625D]">New correlations generated from AI Studio or field sightings will appear here.</p>
           </div>
+        `
+            : leads
+                .map((lead) => {
+                  const caseInfo = typeof lead.caseId === 'object' ? lead.caseId : null;
+                  const caseNumber = caseInfo ? caseInfo.caseNumber : 'ST-10482';
+                  const subjectName = caseInfo ? caseInfo.fullName : 'Subject Reference';
+                  const confPct = Math.round((lead.confidenceScore || 0.85) * 100);
+                  const isVerified = lead.humanVerificationStatus === 'verified';
+                  const isRejected = lead.humanVerificationStatus === 'rejected';
 
-          <!-- Ethical & Limitations Disclaimer -->
-          <div class="p-3 rounded-xl bg-[#f4ecfb] border border-[#dfcceb] text-[10px] text-[#594c6d] space-y-1">
-            <span class="font-bold text-[#5c3280] flex items-center space-x-1">
-              <span>${icon('info', 'w-3 h-3 text-[#8c55bd]')}</span>
-              <span>AI Uncertainty &amp; Limitation Notice</span>
-            </span>
-            <p>${lead.limitationsAndBiasWarning || 'Visual match confidence is subject to camera resolution, lighting angles, and elapsed time since primary case photo.'}</p>
-          </div>
-        </div>
+                  return `
+              <div class="card-panel p-5 space-y-4 hover:border-[#D7CCC8] transition" id="lead-card-${lead._id}">
+                <!-- Lead Top Banner -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E4DCD8]">
+                  <div class="flex items-center space-x-3">
+                    <span class="font-bold text-xs text-[#4E342E]">${caseNumber}</span>
+                    <span class="text-xs font-semibold text-[#2B211E]">${subjectName}</span>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-[#EDE7E4] text-[#4E342E] capitalize">
+                      ${lead.matchType.replace(/_/g, ' ')}
+                    </span>
+                  </div>
 
-        <!-- Modality Feature Weights Breakdown -->
-        <div class="p-3.5 rounded-xl bg-[#fbf8f2] border border-[#dfcfb6] space-y-2.5">
-          <h4 class="text-xs font-bold text-[#786a89] uppercase tracking-wider">Modality Contributions</h4>
-          
-          <div class="space-y-2 text-[11px]">
-            <div>
-              <div class="flex justify-between text-[#786a89] mb-1">
-                <span>Facial Symmetry &amp; Features</span>
-                <span class="text-[#231c2d] font-mono font-bold">${Math.round((lead.breakdown?.facialScore || 0.88) * 100)}%</span>
-              </div>
-              <div class="w-full bg-[#ede2d0] rounded-full h-1.5 overflow-hidden">
-                <div class="bg-gradient-to-r from-[#8c55bd] to-[#aa7dc8] h-full rounded-full" style="width: ${(lead.breakdown?.facialScore || 0.88) * 100}%"></div>
-              </div>
-            </div>
+                  <div class="flex items-center space-x-3">
+                    <div class="text-right">
+                      <div class="text-xs font-bold text-[#2B211E]">${confPct}% Confidence</div>
+                      <div class="text-[10px] text-[#6F625D]">Neural Biometric Score</div>
+                    </div>
+                    <span class="px-2.5 py-1 rounded text-xs font-bold ${
+                      isVerified
+                        ? 'bg-[#EBF3ED] text-[#3F6B4A]'
+                        : isRejected
+                        ? 'bg-[#FDF2F2] text-[#9B3E3E]'
+                        : 'bg-[#FEF9EE] text-[#9A6B2F]'
+                    } uppercase">
+                      ${lead.humanVerificationStatus}
+                    </span>
+                  </div>
+                </div>
 
-            <div>
-              <div class="flex justify-between text-[#786a89] mb-1">
-                <span>Attire &amp; Marker Match</span>
-                <span class="text-[#231c2d] font-mono font-bold">${Math.round((lead.breakdown?.clothingScore || 0.92) * 100)}%</span>
-              </div>
-              <div class="w-full bg-[#ede2d0] rounded-full h-1.5 overflow-hidden">
-                <div class="bg-gradient-to-r from-[#b4a081] to-[#dfcfb6] h-full rounded-full" style="width: ${(lead.breakdown?.clothingScore || 0.92) * 100}%"></div>
-              </div>
-            </div>
+                <!-- Explanation & Breakdown -->
+                <div class="space-y-2">
+                  <p class="text-xs text-[#2B211E] leading-relaxed">
+                    ${lead.summary || lead.aiExplanation || 'Biometric and temporal pattern correlation suggests potential subject sighting.'}
+                  </p>
+                  
+                  <div class="p-3 rounded-md bg-[#FAF8F6] border border-[#E4DCD8] space-y-2">
+                    <div class="flex items-center justify-between text-[11px] font-semibold text-[#4E342E]">
+                      <span>Biometric Sub-Score Breakdown</span>
+                      <span>Weight Impact</span>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                      <div class="space-y-0.5">
+                        <span class="text-[#6F625D] block text-[10px]">Facial Feature:</span>
+                        <div class="font-bold text-[#2B211E]">${Math.round((lead.breakdown?.facialScore || 0.88) * 100)}%</div>
+                      </div>
+                      <div class="space-y-0.5">
+                        <span class="text-[#6F625D] block text-[10px]">Voice Biometrics:</span>
+                        <div class="font-bold text-[#2B211E]">${Math.round((lead.breakdown?.voiceScore || 0.82) * 100)}%</div>
+                      </div>
+                      <div class="space-y-0.5">
+                        <span class="text-[#6F625D] block text-[10px]">Clothing Match:</span>
+                        <div class="font-bold text-[#2B211E]">${Math.round((lead.breakdown?.clothingScore || 0.91) * 100)}%</div>
+                      </div>
+                      <div class="space-y-0.5">
+                        <span class="text-[#6F625D] block text-[10px]">Location Proximity:</span>
+                        <div class="font-bold text-[#2B211E]">${Math.round((lead.breakdown?.locationScore || 0.85) * 100)}%</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-            <div>
-              <div class="flex justify-between text-[#786a89] mb-1">
-                <span>Geospatial Corridor Plausibility</span>
-                <span class="text-[#231c2d] font-mono font-bold">${Math.round((lead.breakdown?.locationScore || 0.85) * 100)}%</span>
-              </div>
-              <div class="w-full bg-[#ede2d0] rounded-full h-1.5 overflow-hidden">
-                <div class="bg-gradient-to-r from-[#5b8a6f] to-[#7ea88f] h-full rounded-full" style="width: ${(lead.breakdown?.locationScore || 0.85) * 100}%"></div>
-              </div>
-            </div>
+                <!-- Verification Decision Buttons -->
+                <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#E4DCD8]">
+                  <div class="text-[11px] text-[#6F625D]">
+                    Reported on ${new Date(lead.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                  </div>
 
-            <div>
-              <div class="flex justify-between text-[#786a89] mb-1">
-                <span>Voice Biometric Match</span>
-                <span class="text-[#231c2d] font-mono font-bold">${Math.round((lead.breakdown?.voiceScore || 0.79) * 100)}%</span>
+                  <div class="flex items-center space-x-2">
+                    <button
+                      data-lead-action="inconclusive"
+                      data-lead-id="${lead._id}"
+                      class="btn-outline-mocha px-3 py-1.5 text-xs font-medium"
+                    >
+                      Mark Inconclusive
+                    </button>
+                    <button
+                      data-lead-action="rejected"
+                      data-lead-id="${lead._id}"
+                      class="px-3 py-1.5 text-xs font-semibold rounded-md bg-[#FDF2F2] text-[#9B3E3E] border border-[#9B3E3E]/20 hover:bg-[#FBE8E8] transition"
+                    >
+                      Reject Lead
+                    </button>
+                    <button
+                      data-lead-action="verified"
+                      data-lead-id="${lead._id}"
+                      class="px-3 py-1.5 text-xs font-semibold rounded-md bg-[#EBF3ED] text-[#3F6B4A] border border-[#3F6B4A]/20 hover:bg-[#E1EDE4] transition flex items-center space-x-1"
+                    >
+                      ${icon('check', 'w-3.5 h-3.5 text-[#3F6B4A]')}
+                      <span>Verify &amp; Escalate</span>
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div class="w-full bg-[#ede2d0] rounded-full h-1.5 overflow-hidden">
-                <div class="bg-gradient-to-r from-[#b85b67] to-[#f5b3bb] h-full rounded-full" style="width: ${(lead.breakdown?.voiceScore || 0.79) * 100}%"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Bottom Human-in-the-Loop Action Bar -->
-      <div class="pt-2 border-t border-black/5 flex flex-wrap items-center justify-between gap-3 text-xs">
-        <div class="text-[#786a89] text-[11px]">
-          ${lead.humanVerificationStatus === 'verified' ? `
-            <span class="text-[#385c47] font-bold flex items-center space-x-1.5">
-              <span>${icon('check', 'w-4 h-4 text-[#5b8a6f]')}</span>
-              <span>Verified by Investigator • Ready for Consent-Gated Reunification</span>
-            </span>
-          ` : `
-            <span>Status: <strong class="text-[#8f642a]">Awaiting Investigator Verification</strong></span>
-          `}
-        </div>
-
-        <div class="flex items-center space-x-2">
-          ${lead.humanVerificationStatus !== 'verified' ? `
-            <button
-              data-lead-id="${lead._id}"
-              data-decision="verified"
-              class="btn-lead-decision px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#5b8a6f] to-[#426a54] hover:opacity-95 text-white font-bold transition cursor-pointer flex items-center space-x-1.5 shadow-xs"
-            >
-              <span>${icon('check', 'w-3.5 h-3.5 text-white')}</span>
-              <span>Confirm &amp; Verify</span>
-            </button>
-            <button
-              data-lead-id="${lead._id}"
-              data-decision="inconclusive"
-              class="btn-lead-decision px-3 py-1.5 rounded-xl bg-[#fdf5ea] hover:bg-[#fae0be] text-[#8f642a] border border-[#fae0be] font-bold transition cursor-pointer"
-            >
-              Request Field Check
-            </button>
-            <button
-              data-lead-id="${lead._id}"
-              data-decision="rejected"
-              class="btn-lead-decision px-3 py-1.5 rounded-xl bg-white hover:bg-[#f6f0e4] text-[#786a89] font-bold border border-[#dfcfb6] transition cursor-pointer"
-            >
-              Dismiss
-            </button>
-          ` : `
-            <button
-              data-case-id="${caseObj?._id || ''}"
-              class="btn-goto-reunification px-4 py-1.5 rounded-xl bg-gradient-to-r from-[#8c55bd] to-[#aa7dc8] hover:from-[#733f9f] hover:to-[#8c55bd] text-white font-bold shadow-xs transition cursor-pointer flex items-center space-x-1.5"
-            >
-              <span>${icon('handshake', 'w-3.5 h-3.5 text-white')}</span>
-              <span>Open Reunification Room</span>
-            </button>
-          `}
-        </div>
+            `;
+                })
+                .join('')
+        }
       </div>
     </div>
   `;
 }
 
 export function setupLeadsEvents(): void {
-  document.querySelectorAll<HTMLButtonElement>('.btn-lead-decision').forEach(btn => {
-    btn.addEventListener('click', async () => {
+  document.querySelectorAll<HTMLButtonElement>('[data-lead-action]').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const action = btn.getAttribute('data-lead-action') as 'verified' | 'rejected' | 'inconclusive';
       const leadId = btn.getAttribute('data-lead-id');
-      const decision = btn.getAttribute('data-decision') as any;
-      if (leadId && decision) {
+
+      if (action && leadId) {
         try {
-          state.setIsAIProcessing(true);
-          await api.verifyLead(leadId, decision, `Human verification executed by active user with decision: ${decision}`);
+          btn.setAttribute('disabled', 'true');
+          btn.textContent = 'Recording...';
+
+          await api.verifyLead(leadId, action, `Investigator review decision: ${action.toUpperCase()}`);
+
           state.addToast({
-            type: decision === 'verified' ? 'success' : 'info',
-            title: `Lead ${decision.toUpperCase()}`,
-            message: `Lead status updated and audit log entry created.`,
+            type: 'success',
+            title: `Lead ${action.toUpperCase()}`,
+            message: `Lead status updated to ${action}. Logged in cryptographic audit trail.`,
           });
-          state.setActiveTab('leads');
-        } catch (e: any) {
+
+          // Re-render leads view
+          const rootEl = document.querySelector<HTMLElement>('main');
+          if (rootEl) {
+            rootEl.innerHTML = await renderLeadsView();
+            setupLeadsEvents();
+          }
+        } catch (err: any) {
           state.addToast({
             type: 'error',
             title: 'Verification Failed',
-            message: e.message,
+            message: err.message || 'Unable to record lead decision.',
           });
-        } finally {
-          state.setIsAIProcessing(false);
+          btn.removeAttribute('disabled');
         }
-      }
-    });
-  });
-
-  document.querySelectorAll<HTMLButtonElement>('.btn-goto-reunification').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const caseId = btn.getAttribute('data-case-id');
-      if (caseId) {
-        state.setSelectedCaseId(caseId);
-      }
-      state.setActiveTab('reunification');
-    });
-  });
-
-  document.querySelectorAll<HTMLButtonElement>('.btn-lead-filter').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const status = btn.getAttribute('data-status');
-      document.querySelectorAll('.btn-lead-filter').forEach(b => {
-        b.classList.remove('bg-[#f4ecfb]', 'text-[#5c3280]', 'border-[#dfcceb]', 'font-bold');
-        b.classList.add('bg-white', 'text-[#786a89]', 'border-[#dfcfb6]', 'font-medium');
-      });
-      btn.classList.remove('bg-white', 'text-[#786a89]', 'border-[#dfcfb6]', 'font-medium');
-      btn.classList.add('bg-[#f4ecfb]', 'text-[#5c3280]', 'border-[#dfcceb]', 'font-bold');
-
-      try {
-        const params: Record<string, string> = {};
-        if (status) params.status = status;
-        const { leads } = await api.getLeads(params);
-        const container = document.getElementById('leads-list-container');
-        if (container) {
-          container.innerHTML = leads.length > 0 
-            ? leads.map(lead => renderLeadDetailCard(lead)).join('')
-            : '<div class="p-8 text-center text-[#786a89] bg-white rounded-2xl border border-[#dfcceb]">No leads found with this filter.</div>';
-          setupLeadsEvents();
-        }
-      } catch (e) {
-        console.error(e);
       }
     });
   });

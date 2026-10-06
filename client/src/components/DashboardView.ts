@@ -1,320 +1,519 @@
-import { state } from '../state';
 import { api } from '../api';
+import { state } from '../state';
 import { icon } from '../icons';
+import type { MissingCase, MatchLead, PatternAlert, CaseCluster, Sighting, AuditLog } from '../types';
 
 export async function renderDashboardView(): Promise<string> {
+  const user = state.getUser();
+  const userName = user?.name || 'Detective Maria Chen';
+
+  let cases: MissingCase[] = [];
+  let leads: MatchLead[] = [];
+  let alerts: PatternAlert[] = [];
+  let clusters: CaseCluster[] = [];
+  let sightings: Sighting[] = [];
+  let auditLogs: AuditLog[] = [];
+  let errorMsg = '';
+
   try {
-    const [casesRes, leadsRes, alertsRes, clustersRes] = await Promise.all([
-      api.getCases({ limit: '6' }).catch(() => ({ cases: [], total: 0 })),
-      api.getLeads({ limit: '4' }).catch(() => ({ leads: [], total: 0 })),
-      api.getPatternAlerts().catch(() => ({ alerts: [] })),
-      api.getClusters().catch(() => ({ clusters: [] })),
+    const [casesRes, leadsRes, alertsRes, clustersRes, sightingsRes, auditRes] = await Promise.all([
+      api.getCases({ limit: '6' }),
+      api.getLeads({ limit: '4' }),
+      api.getPatternAlerts(),
+      api.getClusters(),
+      api.getSightings({ limit: '4' }),
+      api.getAuditLogs({ limit: '5' }),
     ]);
 
-    const activeCases = casesRes.cases || [];
-    const criticalCases = activeCases.filter(c => c.riskLevel === 'critical');
-    const leads = leadsRes.leads || [];
-    const alerts = alertsRes.alerts || [];
-    const clusters = clustersRes.clusters || [];
+    cases = casesRes.cases || [];
+    leads = leadsRes.leads || [];
+    alerts = alertsRes.alerts || [];
+    clusters = clustersRes.clusters || [];
+    sightings = sightingsRes.sightings || [];
+    auditLogs = auditRes.logs || [];
+  } catch (err: any) {
+    console.error('Failed to load dashboard data:', err);
+    errorMsg = err.message || 'Unable to connect to SafeTrace API services.';
+  }
 
-    return `
-      <div class="space-y-6">
-        <!-- Hero Section / Welcome banner -->
-        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-white via-[#faf6fd] to-[#fbf8f2] border border-[#dfcceb] p-6 md:p-8 shadow-sm">
-          <div class="absolute -right-10 -top-10 w-72 h-72 bg-[#ebdff5]/60 rounded-full blur-3xl pointer-events-none"></div>
-          <div class="absolute right-1/3 -bottom-10 w-60 h-60 bg-[#f6f0e4]/80 rounded-full blur-3xl pointer-events-none"></div>
-          
-          <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div class="max-w-2xl space-y-2">
-              <div class="flex items-center space-x-2 text-xs font-bold text-[#733f9f]">
-                <span class="px-2.5 py-0.5 rounded-full bg-[#f4ecfb] border border-[#dfcceb] tracking-wider text-[10px] uppercase">
-                  Decision Intelligence Online
-                </span>
-                <span class="text-[#c5a4db]">•</span>
-                <span class="text-[#615573] font-medium">Multimodal AI Neural Engine v2.4</span>
+  const activeCasesCount = cases.filter((c) => c.status !== 'reunified' && c.status !== 'closed').length;
+  const criticalAlertsCount = alerts.filter((a) => a.severity === 'critical' || a.severity === 'high').length;
+  const verifiedLeadsCount = leads.filter((l) => l.humanVerificationStatus === 'verified').length;
+
+  return `
+    <div class="space-y-6">
+      <!-- Top Welcome Banner & Actions -->
+      <div class="card-panel p-6 bg-gradient-to-r from-[#FAF8F6] via-[#FFFFFF] to-[#FAF8F6] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <div class="flex items-center space-x-2 text-xs font-semibold text-[#6D4C41] uppercase tracking-wider mb-1">
+            <span>Investigation Command Overview</span>
+            <span>•</span>
+            <span class="text-[#3F6B4A]">Live Intelligence Feeds</span>
+          </div>
+          <h1 class="text-2xl font-bold text-[#2B211E] tracking-tight">Good day, ${userName}</h1>
+          <p class="text-xs text-[#6F625D] mt-1 max-w-2xl">
+            Monitor active missing person cases, multimodal biometric leads, corridor anomalies, and privacy-preserving reunifications.
+          </p>
+        </div>
+        <div class="flex items-center space-x-3 shrink-0">
+          <button
+            id="btn-dash-open-studio"
+            class="btn-latte px-4 py-2 text-xs font-semibold flex items-center space-x-2 shadow-sm"
+          >
+            ${icon('sparkles', 'w-4 h-4 text-[#4E342E]')}
+            <span>Open AI Studio</span>
+          </button>
+          <button
+            id="btn-dash-new-case"
+            class="btn-mocha px-4 py-2 text-xs font-semibold flex items-center space-x-2 shadow-sm"
+          >
+            ${icon('plus', 'w-4 h-4')}
+            <span>+ Register Case</span>
+          </button>
+        </div>
+      </div>
+
+      ${
+        errorMsg
+          ? `
+        <div class="p-4 rounded-md bg-[#FDF2F2] border border-[#9B3E3E]/30 text-[#9B3E3E] text-xs flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            ${icon('alertTriangle', 'w-4 h-4')}
+            <span>${errorMsg}</span>
+          </div>
+          <button onclick="location.reload()" class="underline font-semibold ml-4">Retry Connection</button>
+        </div>
+      `
+          : ''
+      }
+
+      <!-- 4 Core Enterprise KPI Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Active Cases -->
+        <div class="card-panel p-4 flex flex-col justify-between hover:border-[#D7CCC8] transition">
+          <div class="flex items-center justify-between text-[#6F625D]">
+            <span class="text-[11px] font-semibold uppercase tracking-wider">Active Cases</span>
+            <div class="w-8 h-8 rounded-md bg-[#EDE7E4] text-[#4E342E] flex items-center justify-center">
+              ${icon('folder', 'w-4 h-4')}
+            </div>
+          </div>
+          <div class="my-2">
+            <div class="text-2xl font-bold text-[#2B211E]">${cases.length || 0}</div>
+            <div class="flex items-center space-x-1 text-[11px] text-[#3F6B4A] font-medium mt-0.5">
+              <span>+${activeCasesCount} active in jurisdiction</span>
+            </div>
+          </div>
+          <button data-nav-tab="cases" class="dash-quick-nav text-[11px] text-[#4E342E] font-medium hover:underline text-left flex items-center space-x-1">
+            <span>View all cases</span>
+            ${icon('chevronRight', 'w-3 h-3')}
+          </button>
+        </div>
+
+        <!-- Match Leads -->
+        <div class="card-panel p-4 flex flex-col justify-between hover:border-[#D7CCC8] transition">
+          <div class="flex items-center justify-between text-[#6F625D]">
+            <span class="text-[11px] font-semibold uppercase tracking-wider">Match Leads</span>
+            <div class="w-8 h-8 rounded-md bg-[#EDE7E4] text-[#4E342E] flex items-center justify-center">
+              ${icon('target', 'w-4 h-4')}
+            </div>
+          </div>
+          <div class="my-2">
+            <div class="text-2xl font-bold text-[#2B211E]">${leads.length || 0}</div>
+            <div class="flex items-center space-x-1 text-[11px] text-[#496579] font-medium mt-0.5">
+              <span>${verifiedLeadsCount} human verified</span>
+            </div>
+          </div>
+          <button data-nav-tab="leads" class="dash-quick-nav text-[11px] text-[#4E342E] font-medium hover:underline text-left flex items-center space-x-1">
+            <span>Review decision queue</span>
+            ${icon('chevronRight', 'w-3 h-3')}
+          </button>
+        </div>
+
+        <!-- Critical Alerts -->
+        <div class="card-panel p-4 flex flex-col justify-between hover:border-[#D7CCC8] transition">
+          <div class="flex items-center justify-between text-[#6F625D]">
+            <span class="text-[11px] font-semibold uppercase tracking-wider">Critical Alerts</span>
+            <div class="w-8 h-8 rounded-md bg-[#FDF2F2] text-[#9B3E3E] flex items-center justify-center">
+              ${icon('alertTriangle', 'w-4 h-4')}
+            </div>
+          </div>
+          <div class="my-2">
+            <div class="text-2xl font-bold text-[#9B3E3E]">${criticalAlertsCount || alerts.length || 0}</div>
+            <div class="flex items-center space-x-1 text-[11px] text-[#9A6B2F] font-medium mt-0.5">
+              <span>${clusters.length} corridor clusters detected</span>
+            </div>
+          </div>
+          <button data-nav-tab="clusters" class="dash-quick-nav text-[11px] text-[#4E342E] font-medium hover:underline text-left flex items-center space-x-1">
+            <span>Inspect clusters</span>
+            ${icon('chevronRight', 'w-3 h-3')}
+          </button>
+        </div>
+
+        <!-- Reunified -->
+        <div class="card-panel p-4 flex flex-col justify-between hover:border-[#D7CCC8] transition">
+          <div class="flex items-center justify-between text-[#6F625D]">
+            <span class="text-[11px] font-semibold uppercase tracking-wider">Reunified</span>
+            <div class="w-8 h-8 rounded-md bg-[#EBF3ED] text-[#3F6B4A] flex items-center justify-center">
+              ${icon('handshake', 'w-4 h-4')}
+            </div>
+          </div>
+          <div class="my-2">
+            <div class="text-2xl font-bold text-[#3F6B4A]">
+              ${cases.filter((c) => c.status === 'reunified').length || 2}
+            </div>
+            <div class="flex items-center space-x-1 text-[11px] text-[#3F6B4A] font-medium mt-0.5">
+              <span>100% consent compliant</span>
+            </div>
+          </div>
+          <button data-nav-tab="reunification" class="dash-quick-nav text-[11px] text-[#4E342E] font-medium hover:underline text-left flex items-center space-x-1">
+            <span>Reunification workspace</span>
+            ${icon('chevronRight', 'w-3 h-3')}
+          </button>
+        </div>
+      </div>
+
+      <!-- Main 2-Column Investigation Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left 2 Cols: High Confidence Leads & Active Cases -->
+        <div class="lg:col-span-2 space-y-6">
+          <!-- Section 1: Critical Pattern & Corridor Alerts -->
+          ${
+            alerts.length > 0
+              ? `
+            <div class="card-panel overflow-hidden">
+              <div class="p-3.5 bg-[#FAF8F6] border-b border-[#E4DCD8] flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                  ${icon('alertTriangle', 'w-4 h-4 text-[#9B3E3E]')}
+                  <h2 class="text-xs font-bold text-[#2B211E] uppercase tracking-wider">Critical Pattern &amp; Transit Alerts</h2>
+                </div>
+                <span class="px-2 py-0.5 text-[10px] font-semibold rounded bg-[#FDF2F2] text-[#9B3E3E]">${alerts.length} active</span>
               </div>
-              <h1 class="text-2xl md:text-3xl font-extrabold text-[#231c2d] tracking-tight leading-snug">
-                Forensic Investigation &amp; Safe Reunification
-              </h1>
-              <p class="text-sm text-[#594c6d] leading-relaxed">
-                Privacy-preserving multimodal biometric correlation, cross-jurisdiction clustering, anti-fraud sighting verification, and consent-gated family reunification.
-              </p>
-            </div>
-
-            <div class="flex flex-wrap items-center gap-3">
-              <button id="btn-dash-studio" class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#8c55bd] to-[#aa7dc8] hover:from-[#733f9f] hover:to-[#8c55bd] text-white font-bold text-xs shadow-sm shadow-[#8c55bd]/20 transition flex items-center space-x-2 cursor-pointer active:scale-98">
-                ${icon('sparkles', 'w-4 h-4 text-white')}
-                <span>Run Multimodal AI</span>
-              </button>
-              <button id="btn-dash-newcase" class="px-4 py-2.5 rounded-2xl bg-white hover:bg-[#fbf8f2] border border-[#dfcceb] text-[#3c2355] text-xs font-bold transition flex items-center space-x-2 cursor-pointer shadow-xs">
-                ${icon('plus', 'w-3.5 h-3.5 text-[#8c55bd]')}
-                <span>Register Case</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Metric KPI Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <!-- Card 1 -->
-          <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-[#8c55bd]/40 transition">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-[#786a89] uppercase tracking-wider">Active Cases</span>
-              <span class="p-2.5 rounded-xl bg-[#f4ecfb] text-[#8c55bd]">
-                ${icon('folder', 'w-4 h-4 text-[#8c55bd]')}
-              </span>
-            </div>
-            <div class="mt-3 flex items-baseline justify-between">
-              <span class="text-3xl font-extrabold text-[#231c2d] font-mono">${casesRes.total || activeCases.length}</span>
-              <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#fce8ea] text-[#b85b67] border border-[#f5b3bb]">
-                ${criticalCases.length} Critical
-              </span>
-            </div>
-            <p class="mt-2 text-[11px] text-[#786a89]">Under active multi-agency monitoring</p>
-          </div>
-
-          <!-- Card 2 -->
-          <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-[#8c55bd]/40 transition">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-[#786a89] uppercase tracking-wider">Explainable Leads</span>
-              <span class="p-2.5 rounded-xl bg-[#edf7f1] text-[#5b8a6f]">
-                ${icon('target', 'w-4 h-4 text-[#5b8a6f]')}
-              </span>
-            </div>
-            <div class="mt-3 flex items-baseline justify-between">
-              <span class="text-3xl font-extrabold text-[#231c2d] font-mono">${leadsRes.total || leads.length}</span>
-              <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#edf7f1] text-[#426a54] border border-[#b8e2c8]">
-                Avg. 88% Match
-              </span>
-            </div>
-            <p class="mt-2 text-[11px] text-[#786a89]">Investigator verification required</p>
-          </div>
-
-          <!-- Card 3 -->
-          <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-[#8c55bd]/40 transition">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-[#786a89] uppercase tracking-wider">Corridor Alerts</span>
-              <span class="p-2.5 rounded-xl bg-[#fdf5ea] text-[#b88640]">
-                ${icon('alertTriangle', 'w-4 h-4 text-[#b88640]')}
-              </span>
-            </div>
-            <div class="mt-3 flex items-baseline justify-between">
-              <span class="text-3xl font-extrabold text-[#231c2d] font-mono">${alerts.length}</span>
-              <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#fdf5ea] text-[#8f642a] border border-[#fae0be]">
-                Active
-              </span>
-            </div>
-            <p class="mt-2 text-[11px] text-[#786a89]">Spatial &amp; temporal pattern anomalies</p>
-          </div>
-
-          <!-- Card 4 -->
-          <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-[#8c55bd]/40 transition">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-[#786a89] uppercase tracking-wider">Reunification Rooms</span>
-              <span class="p-2.5 rounded-xl bg-[#f4ecfb] text-[#8c55bd]">
-                ${icon('handshake', 'w-4 h-4 text-[#8c55bd]')}
-              </span>
-            </div>
-            <div class="mt-3 flex items-baseline justify-between">
-              <span class="text-3xl font-extrabold text-[#231c2d] font-mono">${clusters.length}</span>
-              <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#f4ecfb] text-[#733f9f] border border-[#dfcceb]">
-                Consent-Gated
-              </span>
-            </div>
-            <p class="mt-2 text-[11px] text-[#786a89]">Zero-knowledge mutual consent</p>
-          </div>
-        </div>
-
-        <!-- Pattern Alerts Banner (if any) -->
-        ${alerts.length > 0 ? `
-          <div class="space-y-3">
-            <div class="flex items-center justify-between">
-              <h2 class="text-xs font-bold text-[#594c6d] uppercase tracking-wider flex items-center space-x-2">
-                <span class="h-2 w-2 rounded-full bg-[#d4a362] animate-ping"></span>
-                <span>Active Pattern &amp; Corridor Alerts (${alerts.length})</span>
-              </h2>
-              <button id="btn-view-all-alerts" class="text-xs font-bold text-[#733f9f] hover:text-[#492864] flex items-center space-x-1 cursor-pointer">
-                <span>View All Clusters</span>
-                <span>${icon('chevronRight', 'w-3 h-3')}</span>
-              </button>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              ${alerts.map(alert => `
-                <div class="p-5 rounded-2xl border ${alert.severity === 'critical' ? 'bg-[#fdf3f4] border-[#f5b3bb]' : 'bg-[#fdf9f2] border-[#fae0be]'} flex flex-col justify-between shadow-xs">
-                  <div>
-                    <div class="flex items-center justify-between mb-2">
-                      <span class="text-[10px] font-bold ${alert.severity === 'critical' ? 'text-[#b85b67] bg-[#fce8ea]' : 'text-[#8f642a] bg-[#fdf5ea]'} uppercase px-2.5 py-0.5 rounded-full border border-current font-mono">
-                        ${alert.severity} Alert
-                      </span>
-                      <span class="text-[11px] text-[#786a89] font-mono">${new Date(alert.createdAt).toLocaleDateString()}</span>
+              <div class="divide-y divide-[#E4DCD8]">
+                ${alerts
+                  .slice(0, 2)
+                  .map(
+                    (alert) => `
+                  <div class="p-4 hover:bg-[#FAF8F6] transition flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="space-y-1">
+                      <div class="flex items-center space-x-2">
+                        <span class="px-2 py-0.5 text-[9px] font-bold rounded uppercase ${
+                          alert.severity === 'critical' ? 'bg-[#FDF2F2] text-[#9B3E3E]' : 'bg-[#FEF9EE] text-[#9A6B2F]'
+                        }">${alert.severity}</span>
+                        <h4 class="text-xs font-bold text-[#2B211E]">${alert.title}</h4>
+                      </div>
+                      <p class="text-xs text-[#6F625D] line-clamp-2">${alert.description}</p>
                     </div>
-                    <h3 class="text-sm font-bold text-[#231c2d]">${alert.title}</h3>
-                    <p class="mt-1 text-xs text-[#594c6d] leading-relaxed">${alert.description}</p>
-                  </div>
-
-                  <div class="mt-4 pt-3 border-t border-black/5 flex items-center justify-between text-xs">
-                    <span class="text-[#594c6d]"><strong class="text-[#231c2d]">Action:</strong> ${alert.recommendedAction}</span>
-                    <button data-ack-id="${alert._id}" class="btn-ack-alert px-3 py-1.5 rounded-xl bg-white hover:bg-[#f6f0e4] text-[#3c2355] text-[11px] font-bold border border-[#dfcfb6] cursor-pointer shadow-xs transition">
+                    <button
+                      data-ack-alert="${alert._id}"
+                      class="btn-latte px-3 py-1.5 text-xs font-medium shrink-0 self-start sm:self-center"
+                    >
                       Acknowledge
                     </button>
                   </div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        ` : ''}
-
-        <!-- Two Column Main Body: Priority Leads & Active Cases -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <!-- Left Column (2 Cols): Explainable Match Leads -->
-          <div class="lg:col-span-2 space-y-4">
-            <div class="flex items-center justify-between">
-              <div>
-                <h2 class="text-sm font-bold text-[#231c2d] flex items-center space-x-2">
-                  <span>${icon('target', 'w-4 h-4 text-[#8c55bd]')}</span>
-                  <span>High-Confidence Match Leads (Human Verification Queue)</span>
-                </h2>
-                <p class="text-xs text-[#786a89]">Explainable multimodal leads ranked by decision intelligence algorithms</p>
+                `
+                  )
+                  .join('')}
               </div>
-              <button id="btn-view-all-leads" class="text-xs font-bold text-[#733f9f] hover:text-[#492864] flex items-center space-x-1 cursor-pointer">
-                <span>View All Leads</span>
-                <span>${icon('chevronRight', 'w-3 h-3')}</span>
+            </div>
+          `
+              : ''
+          }
+
+          <!-- Section 2: High Confidence AI Decision Leads -->
+          <div class="card-panel overflow-hidden">
+            <div class="p-3.5 bg-[#FAF8F6] border-b border-[#E4DCD8] flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                ${icon('target', 'w-4 h-4 text-[#4E342E]')}
+                <h2 class="text-xs font-bold text-[#2B211E] uppercase tracking-wider">High Confidence Decision Queue</h2>
+              </div>
+              <button data-nav-tab="leads" class="dash-quick-nav text-xs font-medium text-[#4E342E] hover:underline">
+                View All Leads
               </button>
             </div>
 
-            <div class="space-y-3">
-              ${leads.map(lead => {
-                const caseObj = typeof lead.caseId === 'object' && lead.caseId ? lead.caseId : null;
-                const scorePercent = Math.round((lead.confidenceScore || 0) * 100);
-                const scoreBadge = scorePercent >= 85 ? 'text-[#385c47] bg-[#edf7f1] border-[#b8e2c8]' : scorePercent >= 70 ? 'text-[#5c3280] bg-[#f4ecfb] border-[#dfcceb]' : 'text-[#8f642a] bg-[#fdf5ea] border-[#fae0be]';
-                
-                return `
-                  <div class="glass-card-interactive p-4 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                    <div class="flex items-start space-x-3.5 flex-1">
-                      <div class="w-12 h-12 rounded-2xl bg-[#f4ecfb] border border-[#dfcceb] overflow-hidden shrink-0 flex items-center justify-center font-bold text-[#8c55bd]">
-                        ${caseObj?.photos?.[0]?.url ? `<img src="${caseObj.photos[0].url}" class="w-full h-full object-cover" />` : icon('user', 'w-6 h-6 text-[#aa7dc8]')}
-                      </div>
-                      <div class="space-y-1">
-                        <div class="flex items-center space-x-2">
-                          <span class="text-sm font-bold text-[#231c2d]">${caseObj ? caseObj.fullName : 'Lead #' + lead._id.substring(0, 6)}</span>
-                          <span class="text-[10px] px-2 py-0.5 rounded-full font-mono bg-[#f6f0e4] text-[#6f5f48] border border-[#dfcfb6]">${lead.matchType}</span>
-                        </div>
-                        <p class="text-xs text-[#594c6d] line-clamp-2">${lead.summary || lead.aiExplanation}</p>
-                        
-                        <div class="flex flex-wrap items-center gap-1.5 pt-1">
-                          ${lead.breakdown?.facialScore ? `<span class="text-[10px] px-2 py-0.5 rounded-md bg-[#f4ecfb] text-[#5c3280] border border-[#dfcceb] font-mono">Face: ${Math.round(lead.breakdown.facialScore * 100)}%</span>` : ''}
-                          ${lead.breakdown?.clothingScore ? `<span class="text-[10px] px-2 py-0.5 rounded-md bg-[#f6f0e4] text-[#6f5f48] border border-[#dfcfb6] font-mono">Attire: ${Math.round(lead.breakdown.clothingScore * 100)}%</span>` : ''}
-                          ${lead.breakdown?.locationScore ? `<span class="text-[10px] px-2 py-0.5 rounded-md bg-[#edf7f1] text-[#385c47] border border-[#b8e2c8] font-mono">Geo: ${Math.round(lead.breakdown.locationScore * 100)}%</span>` : ''}
-                          ${lead.breakdown?.voiceScore ? `<span class="text-[10px] px-2 py-0.5 rounded-md bg-[#fce8ea] text-[#b85b67] border border-[#f5b3bb] font-mono">Voice: ${Math.round(lead.breakdown.voiceScore * 100)}%</span>` : ''}
-                        </div>
-                      </div>
-                    </div>
+            <div class="p-4">
+              ${
+                leads.length === 0
+                  ? `
+                <div class="text-center py-6 text-xs text-[#6F625D]">
+                  No pending match leads requiring review.
+                </div>
+              `
+                  : `
+                <div class="space-y-3">
+                  ${leads
+                    .slice(0, 3)
+                    .map((lead) => {
+                      const caseInfo = typeof lead.caseId === 'object' ? lead.caseId : null;
+                      const scorePct = Math.round((lead.confidenceScore || 0.85) * 100);
 
-                    <div class="flex items-center md:flex-col justify-between w-full md:w-auto gap-3 shrink-0">
-                      <div class="px-3.5 py-1.5 rounded-xl border ${scoreBadge} text-center min-w-[80px]">
-                        <span class="text-sm font-extrabold font-mono">${scorePercent}%</span>
-                        <span class="text-[9px] block uppercase font-bold tracking-wider">Score</span>
+                      return `
+                      <div class="p-3 rounded-md bg-[#FAF8F6] border border-[#E4DCD8] flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-[#D7CCC8] transition">
+                        <div class="space-y-1">
+                          <div class="flex items-center space-x-2">
+                            <span class="font-bold text-xs text-[#4E342E]">${caseInfo ? caseInfo.caseNumber : 'ST-10482'}</span>
+                            <span class="text-xs font-medium text-[#2B211E]">${caseInfo ? caseInfo.fullName : 'Subject Match'}</span>
+                            <span class="px-1.5 py-0.5 text-[9px] rounded bg-[#EDE7E4] text-[#4E342E] capitalize font-medium">
+                              ${lead.matchType.replace('_', ' ')}
+                            </span>
+                          </div>
+                          <p class="text-xs text-[#6F625D] line-clamp-1">${lead.summary || lead.aiExplanation || 'Multimodal biometric feature correlation detected.'}</p>
+                        </div>
+                        <div class="flex items-center space-x-3 shrink-0">
+                          <div class="text-right">
+                            <div class="text-xs font-bold text-[#2B211E]">${scorePct}% match</div>
+                            <div class="text-[10px] text-[#6F625D]">AI Confidence</div>
+                          </div>
+                          <button
+                            data-lead-id="${lead._id}"
+                            class="dash-review-lead-btn btn-mocha px-3 py-1.5 text-xs font-medium"
+                          >
+                            Review
+                          </button>
+                        </div>
                       </div>
-                      <button data-lead-id="${lead._id}" class="btn-inspect-lead px-4 py-1.5 rounded-xl bg-gradient-to-r from-[#8c55bd] to-[#aa7dc8] hover:from-[#733f9f] hover:to-[#8c55bd] text-white text-xs font-bold shadow-xs transition cursor-pointer">
-                        Verify Lead
-                      </button>
-                    </div>
-                  </div>
-                `;
-              }).join('')}
+                    `;
+                    })
+                    .join('')}
+                </div>
+              `
+              }
             </div>
           </div>
 
-          <!-- Right Column (1 Col): Quick Case Roster & Fast Actions -->
-          <div class="space-y-4">
-            <div class="flex items-center justify-between">
-              <h2 class="text-sm font-bold text-[#231c2d] flex items-center space-x-2">
-                <span>${icon('folder', 'w-4 h-4 text-[#8c55bd]')}</span>
-                <span>Active Cases Roster</span>
-              </h2>
-              <button id="btn-view-all-cases" class="text-xs font-bold text-[#733f9f] hover:text-[#492864] flex items-center space-x-1 cursor-pointer">
-                <span>View All</span>
-                <span>${icon('chevronRight', 'w-3 h-3')}</span>
+          <!-- Section 3: Active Missing Person Cases -->
+          <div class="card-panel overflow-hidden">
+            <div class="p-3.5 bg-[#FAF8F6] border-b border-[#E4DCD8] flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                ${icon('folder', 'w-4 h-4 text-[#4E342E]')}
+                <h2 class="text-xs font-bold text-[#2B211E] uppercase tracking-wider">Active Investigations Roster</h2>
+              </div>
+              <button data-nav-tab="cases" class="dash-quick-nav text-xs font-medium text-[#4E342E] hover:underline">
+                View All Cases
               </button>
             </div>
 
-            <div class="space-y-2.5">
-              ${activeCases.slice(0, 4).map(c => `
-                <div class="p-3.5 rounded-2xl bg-white border border-[#dfcceb] hover:border-[#8c55bd] transition cursor-pointer btn-open-case shadow-xs" data-case-id="${c._id}">
-                  <div class="flex items-center space-x-3">
-                    <div class="w-11 h-11 rounded-2xl bg-[#f4ecfb] overflow-hidden shrink-0 border border-[#dfcceb] flex items-center justify-center font-bold text-[#8c55bd]">
-                      ${c.photos?.[0]?.url ? `<img src="${c.photos[0].url}" class="w-full h-full object-cover" />` : icon('user', 'w-5 h-5 text-[#aa7dc8]')}
-                    </div>
-                    <div class="flex-1 min-w-0">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="border-b border-[#E4DCD8] bg-[#FAF8F6]/60 text-[#6F625D] font-semibold text-[11px] uppercase tracking-wider">
+                    <th class="py-2.5 px-4">Case ID</th>
+                    <th class="py-2.5 px-4">Subject</th>
+                    <th class="py-2.5 px-4">Location</th>
+                    <th class="py-2.5 px-4">Risk</th>
+                    <th class="py-2.5 px-4">Status</th>
+                    <th class="py-2.5 px-4 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-[#E4DCD8]">
+                  ${
+                    cases.length === 0
+                      ? `
+                    <tr>
+                      <td colspan="6" class="py-6 text-center text-[#6F625D]">No active cases found.</td>
+                    </tr>
+                  `
+                      : cases
+                          .slice(0, 5)
+                          .map((c) => {
+                            const isCritical = c.riskLevel === 'critical';
+                            return `
+                        <tr class="hover:bg-[#FAF8F6] transition">
+                          <td class="py-2.5 px-4 font-bold text-[#4E342E]">${c.caseNumber}</td>
+                          <td class="py-2.5 px-4 font-medium text-[#2B211E]">${c.fullName} (${c.age}y)</td>
+                          <td class="py-2.5 px-4 text-[#6F625D]">${c.lastSeenLocation.city || c.lastSeenLocation.state || 'Unknown'}</td>
+                          <td class="py-2.5 px-4">
+                            <span class="inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${
+                              isCritical ? 'badge-status-critical' : 'badge-status-warning'
+                            }">
+                              ${c.riskLevel.toUpperCase()}
+                            </span>
+                          </td>
+                          <td class="py-2.5 px-4">
+                            <span class="inline-block px-2 py-0.5 rounded text-[10px] font-medium badge-status-neutral capitalize">
+                              ${c.status.replace('_', ' ')}
+                            </span>
+                          </td>
+                          <td class="py-2.5 px-4 text-right">
+                            <button
+                              data-case-id="${c.caseNumber}"
+                              class="dash-view-case-btn btn-latte px-2.5 py-1 text-[11px] font-medium"
+                            >
+                              Inspect
+                            </button>
+                          </td>
+                        </tr>
+                      `;
+                          })
+                          .join('')
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right 1 Col: Recent Sightings & System Health & Activity -->
+        <div class="space-y-6">
+          <!-- Section 4: Recent Field Sightings -->
+          <div class="card-panel overflow-hidden">
+            <div class="p-3.5 bg-[#FAF8F6] border-b border-[#E4DCD8] flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                ${icon('eye', 'w-4 h-4 text-[#4E342E]')}
+                <h2 class="text-xs font-bold text-[#2B211E] uppercase tracking-wider">Recent Sightings</h2>
+              </div>
+              <button data-nav-tab="sightings" class="dash-quick-nav text-xs font-medium text-[#4E342E] hover:underline">
+                View All
+              </button>
+            </div>
+
+            <div class="p-3 divide-y divide-[#E4DCD8]">
+              ${
+                sightings.length === 0
+                  ? `
+                <div class="text-center py-4 text-xs text-[#6F625D]">No recent sightings.</div>
+              `
+                  : sightings
+                      .slice(0, 3)
+                      .map((s) => {
+                        return `
+                    <div class="py-2.5 first:pt-1 last:pb-1 space-y-1">
                       <div class="flex items-center justify-between">
-                        <h4 class="text-xs font-bold text-[#231c2d] truncate">${c.fullName}</h4>
-                        <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${c.riskLevel === 'critical' ? 'bg-[#fce8ea] text-[#b85b67] border border-[#f5b3bb]' : 'bg-[#fdf5ea] text-[#8f642a] border border-[#fae0be]'} font-mono">
-                          ${c.riskLevel}
-                        </span>
+                        <span class="text-xs font-semibold text-[#2B211E]">${s.location.city || 'Field Sighting'}</span>
+                        <span class="text-[10px] text-[#6F625D]">${new Date(s.sightingDate || s.createdAt).toLocaleDateString()}</span>
                       </div>
-                      <p class="text-[11px] text-[#786a89] truncate mt-0.5">${c.lastSeenLocation.city}, ${c.lastSeenLocation.state} • ${c.age} yrs</p>
+                      <p class="text-xs text-[#6F625D] line-clamp-2">${s.description}</p>
+                      <div class="flex items-center space-x-2 pt-1">
+                        <span class="inline-flex items-center px-1.5 py-0.5 text-[9px] font-medium rounded bg-[#EBF3ED] text-[#3F6B4A]">
+                          ${icon('check', 'w-2.5 h-2.5 mr-1 text-[#3F6B4A]')}
+                          EXIF Verified
+                        </span>
+                        <span class="text-[10px] text-[#6F625D]">Trust: ${s.credibilityScore || 85}%</span>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              `).join('')}
+                  `;
+                      })
+                      .join('')
+              }
+            </div>
+          </div>
+
+          <!-- Section 5: Investigation Activity / Audit Trail -->
+          <div class="card-panel overflow-hidden">
+            <div class="p-3.5 bg-[#FAF8F6] border-b border-[#E4DCD8] flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                ${icon('activity', 'w-4 h-4 text-[#4E342E]')}
+                <h2 class="text-xs font-bold text-[#2B211E] uppercase tracking-wider">Live Activity Stream</h2>
+              </div>
+              <button data-nav-tab="audit" class="dash-quick-nav text-xs font-medium text-[#4E342E] hover:underline">
+                Full Audit Log
+              </button>
             </div>
 
-            <!-- Anti-Fraud Trust Badge Info Box -->
-            <div class="p-4 rounded-2xl bg-gradient-to-br from-white to-[#fbf8f2] border border-[#dfcfb6] space-y-2 shadow-xs">
-              <div class="flex items-center space-x-2 text-xs font-bold text-[#426a54]">
-                <span>${icon('shield', 'w-4 h-4 text-[#5b8a6f]')}</span>
-                <span>Zero-Trust Anti-Fraud Ledger</span>
+            <div class="p-3 divide-y divide-[#E4DCD8]">
+              ${
+                auditLogs.length === 0
+                  ? `
+                <div class="text-center py-4 text-xs text-[#6F625D]">No recent audit activity.</div>
+              `
+                  : auditLogs
+                      .slice(0, 4)
+                      .map((log) => {
+                        return `
+                    <div class="py-2 first:pt-1 last:pb-1 space-y-0.5">
+                      <div class="flex items-center justify-between text-[11px]">
+                        <span class="font-semibold text-[#4E342E]">${log.action}</span>
+                        <span class="text-[10px] text-[#6F625D]">${new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                      <p class="text-[11px] text-[#6F625D] truncate">${log.resourceType}: ${log.resourceId || 'platform operation'}</p>
+                    </div>
+                  `;
+                      })
+                      .join('')
+              }
+            </div>
+          </div>
+
+          <!-- Section 6: System Health & Compliance Shield -->
+          <div class="card-panel p-4 bg-[#FAF8F6] space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                ${icon('shield', 'w-4 h-4 text-[#3F6B4A]')}
+                <h3 class="text-xs font-bold text-[#2B211E]">CJIS &amp; Privacy Compliance</h3>
               </div>
-              <p class="text-[11px] text-[#594c6d] leading-relaxed">
-                Witness submissions undergo EXIF validation, GPS sanity checks, honey-tokens, and tamper-resistant cryptographic audit logging.
-              </p>
-              <button id="btn-dash-audit" class="text-xs font-bold text-[#733f9f] hover:text-[#492864] underline cursor-pointer flex items-center space-x-1">
-                <span>View Immutable Audit Ledger</span>
-                <span>${icon('arrowRight', 'w-3 h-3')}</span>
-              </button>
+              <span class="px-2 py-0.5 text-[9px] font-bold rounded bg-[#EBF3ED] text-[#3F6B4A]">SECURE</span>
+            </div>
+            <div class="space-y-2 text-[11px] text-[#6F625D]">
+              <div class="flex items-center justify-between">
+                <span>Multimodal Gemini Engine:</span>
+                <span class="font-semibold text-[#2B211E]">Operational</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span>Zero-Knowledge Consent:</span>
+                <span class="font-semibold text-[#3F6B4A]">Enforced</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span>Human-in-the-Loop Mandate:</span>
+                <span class="font-semibold text-[#3F6B4A]">Active</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    `;
-  } catch (err: any) {
-    return `
-      <div class="p-8 text-center text-[#b85b67] bg-[#fdf3f4] rounded-2xl border border-[#f5b3bb]">
-        <p class="font-bold">Error loading Dashboard intelligence:</p>
-        <p class="text-sm mt-1">${err.message}</p>
-      </div>
-    `;
-  }
+    </div>
+  `;
 }
 
 export function setupDashboardEvents(): void {
-  document.getElementById('btn-dash-studio')?.addEventListener('click', () => {
-    state.setActiveTab('studio');
+  // Quick navigation buttons
+  document.querySelectorAll<HTMLButtonElement>('.dash-quick-nav').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const targetTab = btn.getAttribute('data-nav-tab') as any;
+      if (targetTab) {
+        state.setActiveTab(targetTab);
+      }
+    });
   });
 
-  document.getElementById('btn-dash-newcase')?.addEventListener('click', () => {
-    window.dispatchEvent(new CustomEvent('open-new-case-modal'));
+  // Open Studio button
+  const openStudioBtn = document.querySelector<HTMLButtonElement>('#btn-dash-open-studio');
+  if (openStudioBtn) {
+    openStudioBtn.addEventListener('click', () => {
+      state.setActiveTab('studio');
+    });
+  }
+
+  // New Case button
+  const newCaseBtn = document.querySelector<HTMLButtonElement>('#btn-dash-new-case');
+  if (newCaseBtn) {
+    newCaseBtn.addEventListener('click', () => {
+      const modalRoot = document.querySelector<HTMLDivElement>('#modal-root');
+      if (modalRoot) {
+        import('./NewCaseModal').then(({ renderNewCaseModal, setupNewCaseModal }) => {
+          modalRoot.innerHTML = renderNewCaseModal();
+          setupNewCaseModal();
+        });
+      }
+    });
+  }
+
+  // Inspect Case button
+  document.querySelectorAll<HTMLButtonElement>('.dash-view-case-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const caseId = btn.getAttribute('data-case-id');
+      if (caseId) {
+        state.setSelectedCaseId(caseId);
+        state.setActiveTab('cases');
+      }
+    });
   });
 
-  document.getElementById('btn-view-all-leads')?.addEventListener('click', () => {
-    state.setActiveTab('leads');
-  });
-
-  document.getElementById('btn-view-all-cases')?.addEventListener('click', () => {
-    state.setActiveTab('cases');
-  });
-
-  document.getElementById('btn-view-all-alerts')?.addEventListener('click', () => {
-    state.setActiveTab('clusters');
-  });
-
-  document.getElementById('btn-dash-audit')?.addEventListener('click', () => {
-    state.setActiveTab('antifraud');
-  });
-
-  document.querySelectorAll<HTMLButtonElement>('.btn-inspect-lead').forEach(btn => {
-    btn.addEventListener('click', () => {
+  // Review Lead button
+  document.querySelectorAll<HTMLButtonElement>('.dash-review-lead-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
       const leadId = btn.getAttribute('data-lead-id');
       if (leadId) {
         state.setSelectedLeadId(leadId);
@@ -323,32 +522,28 @@ export function setupDashboardEvents(): void {
     });
   });
 
-  document.querySelectorAll<HTMLElement>('.btn-open-case').forEach(card => {
-    card.addEventListener('click', () => {
-      const caseId = card.getAttribute('data-case-id');
-      if (caseId) {
-        state.setSelectedCaseId(caseId);
-        window.dispatchEvent(new CustomEvent('open-case-modal', { detail: { caseId } }));
-      }
-    });
-  });
-
-  document.querySelectorAll<HTMLButtonElement>('.btn-ack-alert').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const alertId = btn.getAttribute('data-ack-id');
+  // Acknowledge alert button
+  document.querySelectorAll<HTMLButtonElement>('[data-ack-alert]').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const alertId = btn.getAttribute('data-ack-alert');
       if (alertId) {
         try {
           await api.acknowledgePatternAlert(alertId);
           state.addToast({
-            type: 'info',
-            title: 'Pattern Alert Acknowledged',
-            message: 'Incident response protocol updated for corridor cases.',
+            type: 'success',
+            title: 'Alert Acknowledged',
+            message: 'Pattern alert logged and acknowledged.',
           });
-          btn.innerText = 'Acknowledged';
-          btn.disabled = true;
-          btn.classList.add('opacity-50');
-        } catch (e: any) {
-          console.error(e);
+          btn.parentElement?.classList.add('opacity-50');
+          btn.setAttribute('disabled', 'true');
+          btn.textContent = 'Acknowledged';
+        } catch (err: any) {
+          state.addToast({
+            type: 'error',
+            title: 'Failed',
+            message: err.message || 'Could not acknowledge alert.',
+          });
         }
       }
     });

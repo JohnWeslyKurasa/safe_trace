@@ -1,5 +1,22 @@
 import type { User, MissingCase, MatchLead, Sighting, CaseCluster, PatternAlert, ConsentRecord, AuditLog, SecureMessage } from './types';
 
+export interface EvidenceItem {
+  _id: string;
+  evidenceId: string;
+  caseId: string;
+  uploadedBy: User | string;
+  fileName: string;
+  originalName: string;
+  fileType: 'image' | 'audio' | 'video' | 'document' | 'other';
+  mimeType: string;
+  fileSize: number;
+  fileHash: string;
+  storagePath: string;
+  verificationStatus?: 'verified' | 'unverified' | 'tampered';
+  processingStatus: 'pending' | 'processing' | 'completed' | 'failed';
+  createdAt: string;
+}
+
 const API_BASE = '/api';
 
 class ApiService {
@@ -114,6 +131,30 @@ class ApiService {
     });
   }
 
+  // --- Evidence Management ---
+  async uploadEvidence(caseId: string, file: File, description?: string): Promise<{ evidence: EvidenceItem; message?: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('caseId', caseId);
+    if (description) {
+      formData.append('description', description);
+    }
+    return this.request<{ evidence: EvidenceItem; message?: string }>('/evidence/upload', {
+      method: 'POST',
+      body: formData,
+    });
+  }
+
+  async getEvidenceByCase(caseId: string): Promise<{ evidence: EvidenceItem[] }> {
+    return this.request<{ evidence: EvidenceItem[] }>(`/evidence/case/${caseId}`);
+  }
+
+  async deleteEvidence(evidenceId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/evidence/${evidenceId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // --- Sightings ---
   async getSightings(params?: Record<string, string>): Promise<{ sightings: Sighting[]; total: number }> {
     const query = params ? '?' + new URLSearchParams(params).toString() : '';
@@ -141,8 +182,20 @@ class ApiService {
   }
 
   // --- Clusters & Patterns ---
-  async getClusters(): Promise<{ clusters: CaseCluster[] }> {
-    return this.request<{ clusters: CaseCluster[] }>('/clusters');
+  async getClusters(params?: Record<string, string>): Promise<{ clusters: CaseCluster[] }> {
+    const query = params ? '?' + new URLSearchParams(params).toString() : '';
+    return this.request<{ clusters: CaseCluster[] }>(`/clusters${query}`);
+  }
+
+  async getClusterById(id: string): Promise<{ cluster: CaseCluster }> {
+    return this.request<{ cluster: CaseCluster }>(`/clusters/${id}`);
+  }
+
+  async reviewCluster(id: string, reviewStatus: string, reviewNotes?: string): Promise<{ cluster: CaseCluster }> {
+    return this.request<{ cluster: CaseCluster }>(`/clusters/${id}/review`, {
+      method: 'POST',
+      body: JSON.stringify({ reviewStatus, reviewNotes }),
+    });
   }
 
   async getPatternAlerts(): Promise<{ alerts: PatternAlert[] }> {
@@ -192,6 +245,13 @@ class ApiService {
     return this.request<{ records: ConsentRecord[] }>(`/consent${query}`);
   }
 
+  async createConsent(caseData: { caseId?: string; consentType: string; granted: boolean; scope?: string }): Promise<{ consent: ConsentRecord }> {
+    return this.request<{ consent: ConsentRecord }>('/consent', {
+      method: 'POST',
+      body: JSON.stringify(caseData),
+    });
+  }
+
   async updateConsent(consentId: string, status: 'granted' | 'revoked', scope?: string): Promise<{ record: ConsentRecord }> {
     return this.request<{ record: ConsentRecord }>(`/consent/${consentId}`, {
       method: 'PATCH',
@@ -218,7 +278,7 @@ class ApiService {
   }
 
   // --- System Health ---
-  async getHealth(): Promise<{ status: string; aiMode: string; otpMode: string; version: string }> {
+  async getHealth(): Promise<{ status: string; aiMode: string; otpMode: string; version: string; name?: string }> {
     return this.request('/health');
   }
 }

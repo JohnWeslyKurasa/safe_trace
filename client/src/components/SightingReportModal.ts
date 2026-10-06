@@ -2,7 +2,7 @@ import { state } from '../state';
 import { api } from '../api';
 import { icon } from '../icons';
 
-export function renderSightingReportModal(): string {
+export function renderSightingReportModal(prefilledCaseNumber?: string): string {
   return `
     <div id="sighting-modal-backdrop" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
       <div class="glass-panel-elevated w-full max-w-xl rounded-3xl border border-[#dfcceb] overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
@@ -14,7 +14,7 @@ export function renderSightingReportModal(): string {
             </div>
             <div>
               <h2 class="text-base font-bold text-[#231c2d]">Report Sighting / Witness Evidence</h2>
-              <p class="text-[11px] text-[#786a89]">Encrypted transmission with automated anti-fraud validation</p>
+              <p class="text-[11px] text-[#786a89]">${prefilledCaseNumber ? `Linked to Case <span class="font-bold text-[#7c5cbf]">${prefilledCaseNumber}</span>` : 'Encrypted transmission with automated anti-fraud validation'}</p>
             </div>
           </div>
 

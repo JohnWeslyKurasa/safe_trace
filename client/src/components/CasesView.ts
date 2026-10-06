@@ -1,278 +1,226 @@
-import { state } from '../state';
 import { api } from '../api';
-import type { MissingCase } from '../types';
+import { state } from '../state';
 import { icon } from '../icons';
+import type { MissingCase } from '../types';
 
 export async function renderCasesView(): Promise<string> {
+  let cases: MissingCase[] = [];
+  let errorMsg = '';
+
   try {
-    const { cases } = await api.getCases();
+    const res = await api.getCases();
+    cases = res.cases || [];
+  } catch (err: any) {
+    console.error('Failed to load cases:', err);
+    errorMsg = err.message || 'Failed to retrieve cases from backend.';
+  }
 
-    return `
-      <div class="space-y-6">
-        <!-- Top Title & Search / Filter Controls -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 class="text-2xl font-bold text-[#231c2d] tracking-tight flex items-center space-x-2">
-              <span>${icon('folder', 'w-6 h-6 text-[#8c55bd]')}</span>
-              <span>Missing Persons Case Registry</span>
-            </h1>
-            <p class="text-xs text-[#786a89] mt-1">
-              Encrypted, privacy-controlled missing person profiles with multimodal biometrics &amp; consent controls
-            </p>
-          </div>
+  const searchQuery = state.getSearchQuery().toLowerCase();
+  if (searchQuery) {
+    cases = cases.filter(
+      (c) =>
+        c.caseNumber.toLowerCase().includes(searchQuery) ||
+        c.fullName.toLowerCase().includes(searchQuery) ||
+        c.lastSeenLocation.city.toLowerCase().includes(searchQuery) ||
+        c.lastSeenLocation.state.toLowerCase().includes(searchQuery)
+    );
+  }
 
-          <div class="flex items-center space-x-3">
-            <button id="btn-create-case-action" class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#8c55bd] to-[#aa7dc8] hover:from-[#733f9f] hover:to-[#8c55bd] text-white text-xs font-bold shadow-sm shadow-[#8c55bd]/20 transition flex items-center space-x-2 cursor-pointer">
-              ${icon('plus', 'w-4 h-4 text-white')}
-              <span>Register New Case</span>
-            </button>
-          </div>
+  return `
+    <div class="space-y-6">
+      <!-- Top Action Bar -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 class="text-xl font-bold text-[#2B211E] tracking-tight">Case Management</h1>
+          <p class="text-xs text-[#6F625D] mt-1">Manage, investigate, and review active missing-person dossiers with multimodal forensic correlation.</p>
         </div>
+        <div class="flex items-center space-x-3">
+          <button
+            id="btn-new-case-action"
+            class="btn-mocha flex items-center justify-center space-x-2 px-4 py-2 text-xs font-semibold shadow-sm"
+          >
+            ${icon('plus', 'w-4 h-4')}
+            <span>+ New Case</span>
+          </button>
+        </div>
+      </div>
 
-        <!-- Filter & Search Bar -->
-        <div class="glass-panel p-4 rounded-2xl flex flex-wrap items-center justify-between gap-3">
-          <div class="flex flex-1 min-w-[240px] items-center space-x-2.5 bg-[#fbf8f2] border border-[#dfcfb6] rounded-xl px-3.5 py-2">
-            <span class="text-[#8c55bd]">${icon('search', 'w-4 h-4 text-[#8c55bd]')}</span>
-            <input
-              id="input-case-search"
-              type="text"
-              placeholder="Search by name, case #, city, or physical markers..."
-              class="bg-transparent text-xs text-[#231c2d] placeholder-[#88799e] focus:outline-none w-full"
-            />
+      ${
+        errorMsg
+          ? `
+        <div class="p-4 rounded-md bg-[#FDF2F2] border border-[#9B3E3E]/30 text-[#9B3E3E] text-xs flex items-center justify-between">
+          <span>${errorMsg}</span>
+          <button onclick="location.reload()" class="underline font-semibold ml-4">Retry</button>
+        </div>
+      `
+          : ''
+      }
+
+      <!-- Table Toolbar & Filters -->
+      <div class="card-panel overflow-hidden">
+        <div class="p-4 border-b border-[#E4DCD8] bg-[#FAF8F6] flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center space-x-2">
+            <span class="text-xs font-bold text-[#2B211E]">Investigation Records</span>
+            <span class="px-2 py-0.5 text-[10px] rounded-full bg-[#EDE7E4] text-[#4E342E] font-medium">${cases.length} cases</span>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2">
-            <!-- Risk Filter -->
-            <select id="filter-risk" class="bg-[#fbf8f2] border border-[#dfcfb6] text-[#3c2355] text-xs font-medium rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#8c55bd] cursor-pointer shadow-xs">
-              <option value="">All Risk Levels</option>
-              <option value="critical">Critical Risk</option>
-              <option value="high">High Risk</option>
-              <option value="medium">Medium Risk</option>
-              <option value="low">Low Risk</option>
-            </select>
-
-            <!-- Status Filter -->
-            <select id="filter-status" class="bg-[#fbf8f2] border border-[#dfcfb6] text-[#3c2355] text-xs font-medium rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#8c55bd] cursor-pointer shadow-xs">
-              <option value="">All Statuses</option>
+          <!-- Filters Row -->
+          <div class="flex flex-wrap items-center gap-2 text-xs">
+            <select id="case-status-filter" class="input-mocha py-1.5 px-2.5 text-xs text-[#2B211E]">
+              <option value="all">All Statuses</option>
               <option value="active">Active</option>
               <option value="sighting_pending">Sighting Pending</option>
               <option value="verified_lead">Verified Lead</option>
-              <option value="reunification_in_progress">Reunification In Progress</option>
+              <option value="reunification_in_progress">Reunification in Progress</option>
               <option value="reunified">Reunified</option>
+              <option value="closed">Closed</option>
             </select>
 
-            <!-- Gender Filter -->
-            <select id="filter-gender" class="bg-[#fbf8f2] border border-[#dfcfb6] text-[#3c2355] text-xs font-medium rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#8c55bd] cursor-pointer shadow-xs">
-              <option value="">All Genders</option>
-              <option value="female">Female</option>
-              <option value="male">Male</option>
-              <option value="non-binary">Non-binary</option>
+            <select id="case-risk-filter" class="input-mocha py-1.5 px-2.5 text-xs text-[#2B211E]">
+              <option value="all">All Risk Levels</option>
+              <option value="critical">Critical</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+
+            <select id="case-sort-filter" class="input-mocha py-1.5 px-2.5 text-xs text-[#2B211E]">
+              <option value="recent">Sort: Most Recent</option>
+              <option value="risk">Sort: Highest Risk</option>
+              <option value="age">Sort: Age</option>
             </select>
           </div>
         </div>
 
-        <!-- Cases Grid -->
-        <div id="cases-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          ${cases.map(c => renderCaseCard(c)).join('')}
-        </div>
-      </div>
-    `;
-  } catch (err: any) {
-    return `<div class="p-8 text-center text-[#b85b67]">Failed to load cases: ${err.message}</div>`;
-  }
-}
-
-function renderCaseCard(c: MissingCase): string {
-  const riskBadgeClass = {
-    critical: 'bg-[#fce8ea] text-[#b85b67] border-[#f5b3bb]',
-    high: 'bg-[#fdf5ea] text-[#8f642a] border-[#fae0be]',
-    medium: 'bg-[#f6f0e4] text-[#6f5f48] border-[#dfcfb6]',
-    low: 'bg-[#edf7f1] text-[#385c47] border-[#b8e2c8]',
-  }[c.riskLevel] || 'bg-[#f6f0e4] text-[#6f5f48] border-[#dfcfb6]';
-
-  const statusBadgeClass = {
-    active: 'bg-[#f4ecfb] text-[#5c3280] border-[#dfcceb]',
-    sighting_pending: 'bg-[#fdf5ea] text-[#8f642a] border-[#fae0be]',
-    verified_lead: 'bg-[#edf7f1] text-[#385c47] border-[#b8e2c8]',
-    reunification_in_progress: 'bg-[#f4ecfb] text-[#733f9f] border-[#dfcceb]',
-    reunified: 'bg-[#edf7f1] text-[#385c47] border-[#b8e2c8]',
-    archived: 'bg-[#f6f0e4] text-[#88799e] border-[#dfcfb6]',
-    closed: 'bg-[#f6f0e4] text-[#88799e] border-[#dfcfb6]',
-  }[c.status] || 'bg-[#f6f0e4] text-[#88799e]';
-
-  const primaryPhoto = c.photos?.[0]?.url || '';
-  const daysMissing = Math.max(0, Math.floor((Date.now() - new Date(c.lastSeenDate).getTime()) / (1000 * 60 * 60 * 24)));
-
-  return `
-    <div class="glass-card-interactive rounded-2xl overflow-hidden flex flex-col justify-between group shadow-xs">
-      <div>
-        <!-- Photo & Badges Header -->
-        <div class="relative h-48 bg-[#f4ecfb] overflow-hidden">
-          ${primaryPhoto ? `
-            <img src="${primaryPhoto}" alt="${c.fullName}" class="w-full h-full object-cover object-center group-hover:scale-105 transition duration-500" />
-          ` : `
-            <div class="w-full h-full flex flex-col items-center justify-center text-[#aa7dc8] bg-[#f8f5f0]">
-              <span class="mb-1">${icon('user', 'w-10 h-10 text-[#aa7dc8]')}</span>
-              <span class="text-xs text-[#786a89]">No primary photo</span>
+        ${
+          cases.length === 0
+            ? `
+          <div class="p-12 text-center">
+            <div class="w-12 h-12 rounded-full bg-[#EDE7E4] text-[#4E342E] flex items-center justify-center mx-auto mb-3">
+              ${icon('folder', 'w-6 h-6')}
             </div>
-          `}
-          
-          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-
-          <!-- Top Overlay Badges -->
-          <div class="absolute top-3 left-3 right-3 flex items-center justify-between">
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${riskBadgeClass}">
-              ${c.riskLevel} Risk
-            </span>
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-white/95 text-[#231c2d] border border-black/10 shadow-xs">
-              ${c.caseNumber}
-            </span>
+            <h3 class="text-sm font-semibold text-[#2B211E]">No cases match your filters</h3>
+            <p class="text-xs text-[#6F625D] mt-1">Try clearing search filters or create a new case dossier.</p>
           </div>
+        `
+            : `
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="border-b border-[#E4DCD8] bg-[#FAF8F6]/60 text-[#6F625D] font-semibold text-[11px] uppercase tracking-wider">
+                  <th class="py-3 px-4">Case ID</th>
+                  <th class="py-3 px-4">Subject</th>
+                  <th class="py-3 px-4">Age / Gender</th>
+                  <th class="py-3 px-4">Last Seen Location</th>
+                  <th class="py-3 px-4">Risk Level</th>
+                  <th class="py-3 px-4">Status</th>
+                  <th class="py-3 px-4">Investigator</th>
+                  <th class="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-[#E4DCD8]" id="cases-table-body">
+                ${cases
+                  .map((c) => {
+                    const isCritical = c.riskLevel === 'critical';
+                    const isHigh = c.riskLevel === 'high';
+                    const isReunified = c.status === 'reunified';
+                    const investigatorName = typeof c.assignedInvestigator === 'object' ? (c.assignedInvestigator as any)?.name || 'Detective Maria Chen' : 'Detective Maria Chen';
 
-          <!-- Bottom Overlay Info -->
-          <div class="absolute bottom-3 left-3 right-3">
-            <div class="flex items-center justify-between text-white">
-              <span class="text-[11px] font-bold bg-black/60 backdrop-blur-xs px-2.5 py-0.5 rounded-full border border-white/20 font-mono">
-                Missing ${daysMissing} days
-              </span>
-              <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${statusBadgeClass} uppercase">
-                ${c.status.replace(/_/g, ' ')}
-              </span>
-            </div>
+                    return `
+                    <tr class="hover:bg-[#FAF8F6] transition">
+                      <td class="py-3.5 px-4 whitespace-nowrap">
+                        <span class="font-bold text-[#4E342E]">${c.caseNumber}</span>
+                      </td>
+                      <td class="py-3.5 px-4 whitespace-nowrap">
+                        <div class="flex items-center space-x-2.5">
+                          <div class="w-8 h-8 rounded-md bg-[#EDE7E4] text-[#4E342E] flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden border border-[#E4DCD8]">
+                            ${c.fullName.charAt(0)}
+                          </div>
+                          <div>
+                            <div class="font-semibold text-[#2B211E]">${c.fullName}</div>
+                            <div class="text-[10px] text-[#6F625D]">Reported ${new Date(c.createdAt).toLocaleDateString()}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="py-3.5 px-4 whitespace-nowrap text-[#6F625D]">
+                        ${c.age} yrs · <span class="capitalize">${c.gender}</span>
+                      </td>
+                      <td class="py-3.5 px-4">
+                        <div class="font-medium text-[#2B211E] truncate max-w-[160px]">${c.lastSeenLocation.city}, ${c.lastSeenLocation.state}</div>
+                        <div class="text-[10px] text-[#6F625D] truncate max-w-[160px]">${c.lastSeenLocation.address}</div>
+                      </td>
+                      <td class="py-3.5 px-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${
+                          isCritical
+                            ? 'badge-status-critical'
+                            : isHigh
+                            ? 'badge-status-warning'
+                            : 'badge-status-neutral'
+                        }">
+                          ${c.riskLevel.toUpperCase()}
+                        </span>
+                      </td>
+                      <td class="py-3.5 px-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${
+                          isReunified ? 'badge-status-active' : 'badge-status-neutral'
+                        } capitalize">
+                          ${c.status.replace(/_/g, ' ')}
+                        </span>
+                      </td>
+                      <td class="py-3.5 px-4 whitespace-nowrap text-[#6F625D]">
+                        ${investigatorName}
+                      </td>
+                      <td class="py-3.5 px-4 text-right whitespace-nowrap space-x-1.5">
+                        <button
+                          data-view-case="${c.caseNumber}"
+                          class="btn-latte px-2.5 py-1 text-[11px] font-semibold"
+                        >
+                          View Dossier
+                        </button>
+                      </td>
+                    </tr>
+                  `;
+                  })
+                  .join('')}
+              </tbody>
+            </table>
           </div>
-        </div>
-
-        <!-- Case Content Body -->
-        <div class="p-4 space-y-3">
-          <div>
-            <h3 class="text-base font-bold text-[#231c2d] group-hover:text-[#8c55bd] transition flex items-center justify-between">
-              <span>${c.fullName}</span>
-              <span class="text-xs font-semibold text-[#786a89]">${c.age} yrs (${c.gender})</span>
-            </h3>
-            <p class="text-xs text-[#594c6d] mt-0.5 flex items-center space-x-1.5">
-              <span>${icon('mapPin', 'w-3.5 h-3.5 text-[#8c55bd]')}</span>
-              <span>${c.lastSeenLocation.city}, ${c.lastSeenLocation.state}</span>
-            </p>
-          </div>
-
-          <!-- Physical Features Snippet -->
-          <div class="text-[11px] text-[#594c6d] bg-[#fbf8f2] p-3 rounded-xl border border-[#dfcfb6] space-y-1">
-            <div class="flex items-center justify-between text-[#786a89]">
-              <span>Hair: <strong class="text-[#231c2d]">${c.physicalDescription.hairColor || 'N/A'}</strong></span>
-              <span>Eyes: <strong class="text-[#231c2d]">${c.physicalDescription.eyeColor || 'N/A'}</strong></span>
-              <span>Height: <strong class="text-[#231c2d]">${c.physicalDescription.heightCm || '—'}cm</strong></span>
-            </div>
-            ${c.physicalDescription.distinguishingFeatures?.length ? `
-              <p class="text-[#786a89] truncate pt-0.5"><strong class="text-[#8c55bd]">Markers:</strong> ${c.physicalDescription.distinguishingFeatures.join(', ')}</p>
-            ` : ''}
-          </div>
-
-          <!-- Multimodal Vault Indicators -->
-          <div class="flex items-center justify-between text-[11px] text-[#786a89] pt-1">
-            <span class="flex items-center space-x-1" title="Evidence Photos">
-              <span>${icon('camera', 'w-3.5 h-3.5 text-[#8c55bd]')}</span>
-              <span>${c.photos?.length || 0} Photos</span>
-            </span>
-            <span class="flex items-center space-x-1" title="Voice Bio Samples">
-              <span>${icon('waveform', 'w-3.5 h-3.5 text-[#aa7dc8]')}</span>
-              <span>${c.voiceRecordings?.length || 0} Audio</span>
-            </span>
-            <span class="flex items-center space-x-1" title="Consent Protection">
-              <span>${icon('lock', 'w-3.5 h-3.5 text-[#5b8a6f]')}</span>
-              <span>${c.contactConsent.requireInvestigatorApproval ? 'Protected' : 'Open'}</span>
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Action Buttons Footer -->
-      <div class="p-4 pt-0 flex items-center space-x-2">
-        <button
-          data-case-id="${c._id}"
-          class="btn-view-case-dossier flex-1 py-2 rounded-xl bg-[#f4ecfb] hover:bg-[#ebdff5] border border-[#dfcceb] text-[#5c3280] text-xs font-bold transition cursor-pointer text-center"
-        >
-          View Case Dossier
-        </button>
-        <button
-          data-case-id="${c._id}"
-          class="btn-run-case-match px-3.5 py-2 rounded-xl bg-white hover:bg-[#fbf8f2] border border-[#dfcfb6] text-[#3c2355] text-xs font-bold transition cursor-pointer flex items-center space-x-1 shadow-xs"
-          title="Run Multimodal AI Match"
-        >
-          <span>${icon('sparkles', 'w-3.5 h-3.5 text-[#8c55bd]')}</span>
-          <span>Match</span>
-        </button>
+        `
+        }
       </div>
     </div>
   `;
 }
 
 export function setupCasesEvents(): void {
-  document.getElementById('btn-create-case-action')?.addEventListener('click', () => {
-    window.dispatchEvent(new CustomEvent('open-new-case-modal'));
-  });
-
-  document.querySelectorAll<HTMLButtonElement>('.btn-view-case-dossier').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const caseId = btn.getAttribute('data-case-id');
-      if (caseId) {
-        state.setSelectedCaseId(caseId);
-        window.dispatchEvent(new CustomEvent('open-case-modal', { detail: { caseId } }));
+  // New Case modal trigger
+  const newCaseBtn = document.querySelector<HTMLButtonElement>('#btn-new-case-action');
+  if (newCaseBtn) {
+    newCaseBtn.addEventListener('click', () => {
+      const modalRoot = document.querySelector<HTMLDivElement>('#modal-root');
+      if (modalRoot) {
+        import('./NewCaseModal').then(({ renderNewCaseModal, setupNewCaseModal }) => {
+          modalRoot.innerHTML = renderNewCaseModal();
+          setupNewCaseModal();
+        });
       }
     });
-  });
+  }
 
-  document.querySelectorAll<HTMLButtonElement>('.btn-run-case-match').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const caseId = btn.getAttribute('data-case-id');
+  // View Dossier modal trigger
+  document.querySelectorAll<HTMLButtonElement>('[data-view-case]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const caseId = btn.getAttribute('data-view-case');
       if (caseId) {
-        state.setSelectedCaseId(caseId);
-        state.setActiveTab('studio');
-      }
-    });
-  });
-
-  const searchInput = document.getElementById('input-case-search') as HTMLInputElement;
-  const filterRisk = document.getElementById('filter-risk') as HTMLSelectElement;
-  const filterStatus = document.getElementById('filter-status') as HTMLSelectElement;
-  const filterGender = document.getElementById('filter-gender') as HTMLSelectElement;
-
-  const applyFilters = async () => {
-    const params: Record<string, string> = {};
-    if (searchInput?.value) params.search = searchInput.value;
-    if (filterRisk?.value) params.riskLevel = filterRisk.value;
-    if (filterStatus?.value) params.status = filterStatus.value;
-    if (filterGender?.value) params.gender = filterGender.value;
-
-    try {
-      const { cases } = await api.getCases(params);
-      const grid = document.getElementById('cases-grid-container');
-      if (grid) {
-        if (cases.length === 0) {
-          grid.innerHTML = `<div class="col-span-3 p-12 text-center text-[#786a89] bg-white rounded-2xl border border-[#dfcceb]">No cases matched your filter criteria.</div>`;
-        } else {
-          grid.innerHTML = cases.map(c => renderCaseCard(c)).join('');
-          setupCasesEvents();
+        const modalRoot = document.querySelector<HTMLDivElement>('#modal-root');
+        if (modalRoot) {
+          import('./CaseDetailModal').then(({ renderCaseDetailModal, setupCaseModal }) => {
+            modalRoot.innerHTML = renderCaseDetailModal(caseId);
+            setupCaseModal(caseId);
+          });
         }
       }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  searchInput?.addEventListener('input', debounce(applyFilters, 300));
-  filterRisk?.addEventListener('change', applyFilters);
-  filterStatus?.addEventListener('change', applyFilters);
-  filterGender?.addEventListener('change', applyFilters);
-}
-
-function debounce(func: Function, wait: number) {
-  let timeout: any;
-  return function executedFunction(...args: any[]) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
+    });
+  });
 }

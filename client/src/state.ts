@@ -1,7 +1,17 @@
 import type { User } from './types';
 import { api } from './api';
 
-export type AppTab = 'dashboard' | 'cases' | 'leads' | 'studio' | 'clusters' | 'reunification' | 'map' | 'antifraud';
+export type AppTab = 
+  | 'dashboard' 
+  | 'cases' 
+  | 'studio' 
+  | 'leads' 
+  | 'clusters' 
+  | 'map' 
+  | 'antifraud' 
+  | 'sightings' 
+  | 'reunification' 
+  | 'audit';
 
 export interface ToastMessage {
   id: string;
@@ -16,7 +26,9 @@ class AppState {
   private activeTab: AppTab = 'dashboard';
   private selectedCaseId: string | null = null;
   private selectedLeadId: string | null = null;
+  private searchQuery: string = '';
   private isAIProcessing = false;
+  private mobileSidebarOpen = false;
   private toasts: ToastMessage[] = [];
   private listeners: Array<() => void> = [];
 
@@ -48,6 +60,7 @@ class AppState {
 
   setActiveTab(tab: AppTab) {
     this.activeTab = tab;
+    this.mobileSidebarOpen = false;
     this.notify();
   }
 
@@ -66,6 +79,24 @@ class AppState {
 
   setSelectedLeadId(id: string | null) {
     this.selectedLeadId = id;
+    this.notify();
+  }
+
+  getSearchQuery(): string {
+    return this.searchQuery;
+  }
+
+  setSearchQuery(q: string) {
+    this.searchQuery = q;
+    this.notify();
+  }
+
+  getMobileSidebarOpen(): boolean {
+    return this.mobileSidebarOpen;
+  }
+
+  setMobileSidebarOpen(open: boolean) {
+    this.mobileSidebarOpen = open;
     this.notify();
   }
 
@@ -139,6 +170,17 @@ class AppState {
     } finally {
       this.setIsAIProcessing(false);
     }
+  }
+
+  logout() {
+    api.setToken(null);
+    this.setUser(null);
+    this.addToast({
+      type: 'info',
+      title: 'Signed Out',
+      message: 'You have been successfully signed out.',
+    });
+    this.initAuth();
   }
 }
 

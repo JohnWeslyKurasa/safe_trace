@@ -2,137 +2,173 @@
 
 @layer base {
   :root {
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     
-    /* Soft Lavender Accents */
-    --lavender-50: #faf6fd;
-    --lavender-100: #f4ecfb;
-    --lavender-200: #ebdff5;
-    --lavender-300: #dfcceb;
-    --lavender-400: #c5a4db;
-    --lavender-500: #aa7dc8;
-    --lavender-600: #8c55bd;
-    --lavender-700: #733f9f;
-    --lavender-800: #5c3280;
-    --lavender-900: #492864;
+    /* Mocha & Latte Palette Tokens */
+    --color-primary-mocha: #4E342E;
+    --color-latte: #D7CCC8;
+    --color-dark-mocha: #2B1D19;
+    --color-deep-brown: #3E2723;
+    --color-medium-brown: #6D4C41;
+    --color-bg: #F7F3F0;
+    --color-bg-light: #FAF8F6;
+    --color-card: #FFFFFF;
+    --color-light-latte: #EDE7E4;
+    --color-border: #E4DCD8;
+    --color-text-primary: #2B211E;
+    --color-text-secondary: #6F625D;
 
-    /* Warm Beige / Sand / Linen Palette */
-    --beige-50: #fdfcf9;
-    --beige-100: #fbf8f2;
-    --beige-200: #f6f0e4;
-    --beige-300: #ede2d0;
-    --beige-400: #dfcfb6;
-    --beige-500: #cbba9d;
-    --beige-600: #b4a081;
-    --beige-700: #937f62;
-    --beige-800: #6f5f48;
-    --beige-900: #4a3e2f;
-
-    /* Surface Tokens */
-    --surface-bg: #f8f5f0;
-    --surface-card: #ffffff;
-    --surface-elevated: #ffffff;
+    /* Semantic Status */
+    --color-success: #3F6B4A;
+    --color-warning: #9A6B2F;
+    --color-danger: #9B3E3E;
+    --color-info: #496579;
   }
   
   body {
-    background-color: #f8f5f0;
-    background-image: 
-      radial-gradient(at 10% 10%, rgba(223, 204, 235, 0.45) 0px, transparent 40%),
-      radial-gradient(at 90% 15%, rgba(246, 240, 228, 0.7) 0px, transparent 50%),
-      radial-gradient(at 50% 90%, rgba(235, 223, 245, 0.35) 0px, transparent 60%);
-    background-attachment: fixed;
-    color: #231c2d;
+    background-color: #F7F3F0;
+    color: #2B211E;
     overflow-x: hidden;
   }
 
-  /* Custom scrollbars */
+  /* Custom Clean Scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #f6f0e4;
+    background: #EDE7E4;
   }
   ::-webkit-scrollbar-thumb {
-    background: #dfcceb;
-    border-radius: 9999px;
+    background: #D7CCC8;
+    border-radius: 6px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #c5a4db;
+    background: #6D4C41;
   }
 }
 
-/* Glassmorphism & UI Accents (Light Beige & Soft Lavender aesthetic) */
-.glass-panel {
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(140, 85, 189, 0.12);
-  box-shadow: 0 4px 20px -2px rgba(90, 70, 120, 0.05), 0 1px 3px 0 rgba(0, 0, 0, 0.02);
+/* Reusable Professional Components */
+.card-panel {
+  background-color: #FFFFFF;
+  border: 1px solid #E4DCD8;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(43, 29, 25, 0.04), 0 1px 2px rgba(43, 29, 25, 0.02);
 }
 
-.glass-panel-elevated {
-  background: #ffffff;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(140, 85, 189, 0.16);
-  box-shadow: 0 16px 36px -6px rgba(90, 70, 120, 0.09), 0 2px 6px 0 rgba(0, 0, 0, 0.03);
+.card-panel-hover {
+  background-color: #FFFFFF;
+  border: 1px solid #E4DCD8;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(43, 29, 25, 0.04);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.card-panel-hover:hover {
+  border-color: #D7CCC8;
+  box-shadow: 0 4px 12px rgba(78, 52, 46, 0.08);
+  transform: translateY(-1px);
 }
 
-.glass-card-interactive {
-  background: #ffffff;
-  border: 1px solid rgba(140, 85, 189, 0.12);
-  box-shadow: 0 2px 8px rgba(90, 70, 120, 0.04);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+/* Primary and Secondary Buttons */
+.btn-mocha {
+  background-color: #4E342E;
+  color: #FAF8F6;
+  border: 1px solid #3E2723;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.15s ease;
 }
-.glass-card-interactive:hover {
-  background: #ffffff;
-  border-color: rgba(140, 85, 189, 0.38);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 24px -4px rgba(140, 85, 189, 0.12), 0 2px 6px rgba(0, 0, 0, 0.03);
+.btn-mocha:hover {
+  background-color: #3E2723;
+  box-shadow: 0 2px 6px rgba(43, 29, 25, 0.2);
 }
-
-/* Gradients */
-.gradient-lavender-primary {
-  background: linear-gradient(135deg, #8c55bd 0%, #a372d3 100%);
-}
-
-.gradient-lavender-soft {
-  background: linear-gradient(135deg, #ebdff5 0%, #f6f0e4 100%);
+.btn-mocha:active {
+  transform: scale(0.98);
 }
 
-.text-gradient-lavender {
-  background: linear-gradient(135deg, #492864 0%, #733f9f 50%, #8c55bd 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.btn-latte {
+  background-color: #EDE7E4;
+  color: #4E342E;
+  border: 1px solid #E4DCD8;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+.btn-latte:hover {
+  background-color: #D7CCC8;
+  border-color: #D7CCC8;
 }
 
-/* Waveform visualizer */
-.waveform-bar {
-  animation: wave-bounce 1.2s ease-in-out infinite alternate;
+.btn-outline-mocha {
+  background-color: transparent;
+  color: #4E342E;
+  border: 1px solid #E4DCD8;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.15s ease;
 }
-@keyframes wave-bounce {
-  0% { height: 15%; }
-  100% { height: 95%; }
+.btn-outline-mocha:hover {
+  background-color: #FAF8F6;
+  border-color: #D7CCC8;
 }
 
-/* Leaflet map Light styling */
+/* Form controls */
+.input-mocha {
+  background-color: #FFFFFF;
+  border: 1px solid #E4DCD8;
+  border-radius: 6px;
+  color: #2B211E;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.input-mocha:focus {
+  outline: none;
+  border-color: #4E342E;
+  box-shadow: 0 0 0 3px rgba(78, 52, 46, 0.1);
+}
+
+/* Badges */
+.badge-status-active {
+  background-color: #EBF3ED;
+  color: #3F6B4A;
+  border: 1px solid rgba(63, 107, 74, 0.2);
+}
+.badge-status-critical {
+  background-color: #FDF2F2;
+  color: #9B3E3E;
+  border: 1px solid rgba(155, 62, 62, 0.2);
+}
+.badge-status-warning {
+  background-color: #FEF9EE;
+  color: #9A6B2F;
+  border: 1px solid rgba(154, 107, 47, 0.2);
+}
+.badge-status-info {
+  background-color: #EFF5F8;
+  color: #496579;
+  border: 1px solid rgba(73, 101, 121, 0.2);
+}
+.badge-status-neutral {
+  background-color: #EDE7E4;
+  color: #4E342E;
+  border: 1px solid #E4DCD8;
+}
+
+/* Leaflet Map Light styling */
 .leaflet-container {
-  background-color: #f8f5f0 !important;
+  background-color: #F7F3F0 !important;
   font-family: inherit !important;
 }
-
 .leaflet-popup-content-wrapper {
-  background: #ffffff !important;
-  color: #231c2d !important;
-  border: 1px solid rgba(140, 85, 189, 0.2) !important;
-  border-radius: 14px !important;
-  box-shadow: 0 16px 32px -6px rgba(90, 70, 120, 0.14) !important;
+  background: #FFFFFF !important;
+  color: #2B211E !important;
+  border: 1px solid #E4DCD8 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 24px rgba(43, 29, 25, 0.12) !important;
 }
 .leaflet-popup-tip {
-  background: #ffffff !important;
+  background: #FFFFFF !important;
 }
 .leaflet-popup-content {
-  margin: 14px 16px !important;
-  line-height: 1.5 !important;
+  margin: 12px 14px !important;
+  line-height: 1.45 !important;
 }
